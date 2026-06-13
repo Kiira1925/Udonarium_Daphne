@@ -26,9 +26,17 @@ CLOUDFLARED_PROTOCOL=http2
 
 `start-public-cloudflare.bat` を実行します。
 
-起動後、ターミナルに表示される `https://*.trycloudflare.com/` のURLを参加者に共有してください。
+起動後、ターミナルに `PUBLIC URL:` として表示される `https://*.trycloudflare.com/` のURLを参加者に共有してください。
+
+現在の公開URLは `public-url.txt` にも保存されます。ターミナルを見失った場合は、このファイルを開いて最新のURLを確認できます。
 
 `PORT` が既に使用中の場合は、自動的に次の空きポートを使用します。Cloudflareとの接続は既定で `http2` を使用します。QUICを試したい場合は `.env.public` の `CLOUDFLARED_PROTOCOL` を `quic` に変更してください。
+
+## 接続できない場合
+
+- ブラウザで `DNS_PROBE_FINISHED_NXDOMAIN` が表示される場合、その `trycloudflare.com` URLは既に無効になっている可能性が高いです。バッチを起動し直し、新しく表示された `PUBLIC URL` を共有してください。
+- Quick TunnelのURLは、バッチを閉じたりPCがスリープしたりすると使えなくなります。
+- 古い `cloudflared` のウィンドウが残っている場合は閉じてから、もう一度 `start-public-cloudflare.bat` を実行してください。
 
 ## 注意
 

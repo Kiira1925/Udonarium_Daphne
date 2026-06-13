@@ -3,7 +3,8 @@
 Udonarium Daphne は、Udonarium をベースにしたブラウザ動作のオンラインセッション支援ツールです。
 軽量なオンライン卓の操作感を保ちながら、GM向けの秘匿管理、バフ/デバフ管理、リソース操作コマンド、ローカル環境からの一時公開機能を追加しています。
 
-バージョン: `0.1.3`  
+バージョン: `0.1.4`
+
 状態: 公開前プレビュー
 
 ![Udonarium Daphne screenshot](docs/images/ss.jpg)
@@ -141,17 +142,18 @@ winget install --id Cloudflare.cloudflared
 start-public-cloudflare.bat
 ```
 
-起動後、ターミナルに以下のようなURLが表示されます。
+起動後、ターミナルに `PUBLIC URL:` として以下のようなURLが表示されます。
 
 ```text
 https://example.trycloudflare.com/
 ```
 
-このURLを参加者に共有すると、外部ユーザーも接続できます。
+このURLを参加者に共有すると、外部ユーザーも接続できます。現在の公開URLは `public-url.txt` にも保存されます。
 
 注意:
 
 - Quick Tunnel のURLは起動するたびに変わります。
+- 以前共有した `trycloudflare.com` のURLは、トンネル停止後に無効になります。ブラウザで `DNS_PROBE_FINISHED_NXDOMAIN` が出る場合は古いURLを開いている可能性が高いため、バッチを起動し直して新しい `PUBLIC URL` を共有してください。
 - 公開中はURLを知っているユーザーがアクセスできます。
 - セッション終了後はバッチまたは `cloudflared` を停止してください。
 
