@@ -198,6 +198,8 @@
 }
 
 .component:hover .effect-badges {
+  align-items: center;
+  flex-direction: column;
   flex-wrap: nowrap;
   max-width: none;
   width: max-content;
