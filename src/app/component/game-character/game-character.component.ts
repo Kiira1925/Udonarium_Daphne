@@ -64,6 +64,8 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
   get activeEffects(): BuffEffect[] {
     return RoomState.instance.effects.filter(effect => effect.targetIdentifier === this.gameCharacter.identifier);
   }
+  get isRoundActive(): boolean { return 0 < RoomState.instance.round; }
+  get isActionDone(): boolean { return RoomState.instance.isActionDone(this.gameCharacter); }
   get canAccessCharacter(): boolean { return RoomState.instance.canAccessGMCharacter(this.gameCharacter); }
 
   gridSize: number = 50;

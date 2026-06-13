@@ -37,6 +37,7 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
 
   get roomState(): RoomState { return RoomState.instance; }
   get round(): number { return this.roomState.round; }
+  get canManageRound(): boolean { return this.roomState.isGM(); }
   get operators(): BuffOperator[] { return ['+', '-', '*']; }
   get effectKinds(): BuffEffectKind[] { return ['stat', 'note']; }
 
@@ -130,10 +131,18 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
   }
 
   incrementRound() {
+    if (!this.canManageRound) {
+      this.message = 'ラウンド操作はGMモード中のユーザーのみ実行できます';
+      return;
+    }
     this.roomState.incrementRound(1);
   }
 
   resetBattle() {
+    if (!this.canManageRound) {
+      this.message = 'ラウンド操作はGMモード中のユーザーのみ実行できます';
+      return;
+    }
     this.roomState.resetBattle();
   }
 

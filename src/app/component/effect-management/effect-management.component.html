@@ -5,16 +5,17 @@
       <div class="round-value">{{round}}</div>
     </div>
     <div class="round-actions">
-      <button (click)="incrementRound()">
+      <button (click)="incrementRound()" [disabled]="!canManageRound">
         <i class="material-icons">add</i>
         <span>+1 Round</span>
       </button>
-      <button class="danger" (click)="resetBattle()">
+      <button class="danger" (click)="resetBattle()" [disabled]="!canManageRound">
         <i class="material-icons">restart_alt</i>
         <span>Reset</span>
       </button>
     </div>
   </section>
+  <div class="caption" *ngIf="!canManageRound">ラウンド操作はGMモード中のみ実行できます。</div>
 
   <section class="template-box">
     <div class="section-title">バフテンプレート</div>

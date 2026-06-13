@@ -9,6 +9,47 @@
   color: #CCC;
   background-color: rgba(30, 30, 30, 0.8);
 }
+
+.action-done-row {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  padding: 3px 5px 5px;
+}
+
+.action-done-button {
+  align-items: center;
+  background: transparent;
+  border: solid 1px #555;
+  border-radius: 100px;
+  color: #444;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 11px;
+  gap: 3px;
+  padding: 2px 8px;
+}
+
+.action-done-button:hover {
+  background-color: #888;
+  color: #eee;
+}
+
+.action-done-button.is-done {
+  background: #555;
+  color: #cfe8d5;
+}
+
+.action-done-button .material-icons {
+  font-size: 14px;
+}
+
+.round-label {
+  color: #555;
+  font-size: 11px;
+}
+
 .palette {
 /*.input {*/
   box-sizing: border-box;

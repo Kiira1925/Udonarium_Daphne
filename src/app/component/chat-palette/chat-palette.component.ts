@@ -50,6 +50,9 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
   get chatTab(): ChatTab { return ObjectStore.instance.get<ChatTab>(this.chatTabidentifier); }
   get myPeer(): PeerCursor { return PeerCursor.myCursor; }
   get otherPeers(): PeerCursor[] { return ObjectStore.instance.getObjects(PeerCursor); }
+  get roomState(): RoomState { return RoomState.instance; }
+  get isRoundActive(): boolean { return 0 < this.roomState.round; }
+  get isActionDone(): boolean { return this.character ? this.roomState.isActionDone(this.character) : false; }
 
   constructor(
     public chatMessageService: ChatMessageService,
@@ -146,5 +149,9 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
     } else {
       this.palette.setPalette(this.editPalette);
     }
+  }
+
+  toggleActionDone() {
+    this.roomState.toggleActionDone(this.character);
   }
 }

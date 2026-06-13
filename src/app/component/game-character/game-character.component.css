@@ -149,6 +149,14 @@
   top: -30px;
 }
 
+.action-done-mark {
+  color: #b9f6ca;
+  font-size: 14px;
+  line-height: 1;
+  margin-left: 4px;
+  vertical-align: -2px;
+}
+
 .effect-badges {
   align-items: center;
   backface-visibility: hidden;

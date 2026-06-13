@@ -10,6 +10,13 @@
     </form>
     <chat-input [onlyCharacters]="true" [chatTabidentifier]="chatTabidentifier" 
     [(gameType)]="gameType" [(sendFrom)]="sendFrom" [(text)]="text" (chat)="sendChat($event)" #chatInput></chat-input>
+    <div *ngIf="isRoundActive" class="action-done-row">
+      <button type="button" class="action-done-button" [class.is-done]="isActionDone" (click)="toggleActionDone()">
+        <span class="material-icons">{{isActionDone ? 'check_circle' : 'radio_button_unchecked'}}</span>
+        {{isActionDone ? '行動完了済み' : '行動完了にする'}}
+      </button>
+      <span class="round-label">{{roomState.round}}R</span>
+    </div>
     <div *ngIf="isEdit" class="edit-info"><i class="material-icons" style="vertical-align: bottom; size:0.8rem;">info_outline</i> チャットパレット編集中です</div>
   </div>
   <div *ngIf="!isEdit" style="flex-grow: 1; height: 0; min-height: 100px;">

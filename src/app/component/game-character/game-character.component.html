@@ -29,7 +29,10 @@
               <div *ngFor="let rotateY of ['0', '180deg']"
                 class="name-tag is-nowrap is-black-background"
                 [ngStyle]="{'transform': 'translateX(-50%) translateX(' + size * gridSize / 2 +'px) rotateY(' + rotateY + ')'}">
-                <div class="has-length-limit">{{name}}</div>
+                <div class="has-length-limit">
+                  {{name}}
+                  <span *ngIf="isRoundActive && isActionDone" class="action-done-mark material-icons">check_circle</span>
+                </div>
               </div>
             </ng-container>
             <ng-container *ngIf="0 < activeEffects.length">

@@ -63,6 +63,7 @@ export class RoomState extends GameObject {
   @SyncVar() round: number = 0;
   @SyncVar() effects: BuffEffect[] = [];
   @SyncVar() buffTemplates: BuffTemplate[] = [];
+  @SyncVar() actionDoneCharacterIds: string[] = [];
   @SyncVar() roomMasterUserId: string = '';
 
   get localGMMode(): boolean {
@@ -146,6 +147,7 @@ export class RoomState extends GameObject {
   incrementRound(amount: number = 1): BuffEffect[] {
     if (amount < 1) return [];
     this.round = this.round + amount;
+    this.actionDoneCharacterIds = [];
     this.sendRoundAnnouncement();
 
     let expired: BuffEffect[] = [];
@@ -166,6 +168,7 @@ export class RoomState extends GameObject {
     let removedCount = this.effects.length;
     this.round = 0;
     this.effects = [];
+    this.actionDoneCharacterIds = [];
     return removedCount;
   }
 
@@ -288,6 +291,23 @@ export class RoomState extends GameObject {
   selectedCharacters(): GameCharacter[] {
     let objects = TabletopSelectionService.instance?.objects ?? [];
     return objects.filter((object): object is GameCharacter => object instanceof GameCharacter);
+  }
+
+  isActionDone(character: GameCharacter): boolean {
+    return this.round > 0 && this.actionDoneCharacterIds.includes(character.identifier);
+  }
+
+  setActionDone(character: GameCharacter, isDone: boolean) {
+    if (!character || this.round <= 0) return;
+    let ids = this.actionDoneCharacterIds.filter(identifier => identifier !== character.identifier);
+    if (isDone) ids.push(character.identifier);
+    this.actionDoneCharacterIds = ids;
+  }
+
+  toggleActionDone(character: GameCharacter): boolean {
+    let isDone = !this.isActionDone(character);
+    this.setActionDone(character, isDone);
+    return isDone;
   }
 
   private async onSendMessage(tabIdentifier: string, messageIdentifier: string) {
@@ -422,6 +442,11 @@ export class RoomState extends GameObject {
     let match = /^\/round\s+(.+)$/i.exec(text);
     if (!match) return false;
 
+    if (!this.isGM()) {
+      this.sendSystemMessage(chatMessage, tabIdentifier, 'ラウンド操作はGMモード中のユーザーのみ実行できます');
+      return true;
+    }
+
     let arg = match[1].trim().toLowerCase();
     if (arg === 'reset') {
       let removedCount = this.resetBattle();
@@ -477,6 +502,7 @@ export class RoomState extends GameObject {
   private removeCharacterState(targetIdentifier: string) {
     this.removeEffectsByTarget(targetIdentifier);
     this.removeTemplatesByOwner(targetIdentifier);
+    this.actionDoneCharacterIds = this.actionDoneCharacterIds.filter(identifier => identifier !== targetIdentifier);
   }
 
   private removeEffectsByTarget(targetIdentifier: string) {
