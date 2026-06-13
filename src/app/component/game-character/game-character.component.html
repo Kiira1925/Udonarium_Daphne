@@ -45,7 +45,8 @@
                 class="effect-badges"
                 [ngStyle]="{'transform': 'translateX(-50%) translateX(' + size * gridSize / 2 +'px) rotateY(' + rotateY + ')'}">
                 <div class="effect-badge is-black-background" *ngFor="let effect of activeEffects" [title]="formatEffectBadgeDetail(effect)">
-                  {{formatEffectBadge(effect)}}
+                  <span class="effect-badge-summary">{{formatEffectBadge(effect)}}</span>
+                  <span class="effect-badge-detail">{{formatEffectBadgeDetail(effect)}}</span>
                 </div>
               </div>
             </ng-container>
