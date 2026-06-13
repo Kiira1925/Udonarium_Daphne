@@ -46,6 +46,13 @@ export interface CharacterEffectState {
   effects?: Partial<BuffEffect>[];
 }
 
+interface ResourceCommand {
+  token: string;
+  resourceName: string;
+  operator: string;
+  expression: string;
+}
+
 @SyncObject('room-state')
 export class RoomState extends GameObject {
   private static readonly identifier = 'RoomState';
@@ -340,18 +347,26 @@ export class RoomState extends GameObject {
     if (!chatMessage || !chatMessage.isSendFromSelf || chatMessage.isSystem) return;
 
     let text = (chatMessage.text ?? '').trim();
-    if (await this.handleResourceCommand(text, chatMessage, tabIdentifier)) return;
+    if (await this.handleResourceCommands(text, chatMessage, tabIdentifier)) return;
     if (!text.startsWith('/')) return;
 
     if (this.handleBuffCommand(text, chatMessage, tabIdentifier)) return;
     if (this.handleRoundCommand(text, chatMessage, tabIdentifier)) return;
   }
 
-  private async handleResourceCommand(text: string, chatMessage: ChatMessage, tabIdentifier: string): Promise<boolean> {
+  private async handleResourceCommands(text: string, chatMessage: ChatMessage, tabIdentifier: string): Promise<boolean> {
     if (!text.startsWith(':')) return false;
 
-    let parsed = /^:\s*(.+?)\s*([+\-*/=])\s*(.+)$/.exec(text);
-    if (!parsed) {
+    let tokens = text.split(' ').filter(token => 0 < token.length);
+    let commandTokens: string[] = [];
+    let index = 0;
+    while (index < tokens.length && tokens[index].startsWith(':')) {
+      commandTokens.push(tokens[index]);
+      index++;
+    }
+
+    let commands = commandTokens.map(token => this.parseResourceCommand(token));
+    if (commands.length < 1 || commands.some(command => command == null)) {
       this.sendSystemMessage(chatMessage, tabIdentifier, 'リソース操作書式: :HP-1d6 / :MP+2 / :HP=10');
       return true;
     }
@@ -362,27 +377,51 @@ export class RoomState extends GameObject {
       return true;
     }
 
-    let resourceName = parsed[1].trim();
-    let operator = parsed[2];
-    let options = this.parseResourceOptions(parsed[3].trim());
+    if (source.isStatusHidden) {
+      let commentTokens = tokens.slice(index);
+      chatMessage.setAttribute('gmText', text);
+      chatMessage.value = commands
+        .map(command => `:${command.resourceName} ??`)
+        .concat(commentTokens)
+        .join(' ');
+    }
+
+    for (let command of commands) {
+      await this.executeResourceCommand(command, source, chatMessage, tabIdentifier);
+    }
+    return true;
+  }
+
+  private parseResourceCommand(token: string): ResourceCommand | null {
+    let parsed = /^:\s*(.+?)\s*([+\-*/=])\s*(.+)$/.exec(token);
+    if (!parsed) return null;
+
+    return {
+      token: token,
+      resourceName: parsed[1].trim(),
+      operator: parsed[2],
+      expression: parsed[3].trim(),
+    };
+  }
+
+  private async executeResourceCommand(command: ResourceCommand, source: GameCharacter, chatMessage: ChatMessage, tabIdentifier: string) {
+    let resourceName = command.resourceName;
+    let operator = command.operator;
+    let options = this.parseResourceOptions(command.expression);
     let expression = options.expression;
     let shouldHideResourceChat = source.isStatusHidden;
-    if (shouldHideResourceChat) {
-      chatMessage.setAttribute('gmText', text);
-      chatMessage.value = `:${resourceName} ??`;
-    }
     let expressionForEvaluate = operator === '+' || operator === '-' ? operator + expression : expression;
     let operatorForCalculate = operator === '+' || operator === '-' ? '+' : operator;
     let resource = this.findNumberResource(source, resourceName);
     if (!resource) {
       this.sendSystemMessage(chatMessage, tabIdentifier, `${source.name} に「${resourceName}」リソースは見つかりません`);
-      return true;
+      return;
     }
 
     let operand = await this.evaluateResourceExpression(expressionForEvaluate, chatMessage.tag);
     if (operand == null) {
       this.sendSystemMessage(chatMessage, tabIdentifier, `式を数値として評価できません: ${expressionForEvaluate}`);
-      return true;
+      return;
     }
     operand = this.applyResourceOperandOptions(operator, operand, options);
 
@@ -392,7 +431,7 @@ export class RoomState extends GameObject {
     let next = this.calculateResourceValue(current, operatorForCalculate, operand);
     if (next == null) {
       this.sendSystemMessage(chatMessage, tabIdentifier, `リソース操作に失敗しました: ${operator}${expression}`);
-      return true;
+      return;
     }
     next = this.applyResourceResultOptions(next, resource, options);
 
@@ -404,7 +443,6 @@ export class RoomState extends GameObject {
       ? `${source.name} ${resource.name}: ${current} -> ${resource.currentValue} (${operator}${expression} = ${this.formatResourceOperation(operatorForCalculate, operand)})`
       : '';
     this.sendSystemMessage(chatMessage, tabIdentifier, publicText, gmText);
-    return true;
   }
 
   private handleBuffCommand(text: string, chatMessage: ChatMessage, tabIdentifier: string): boolean {

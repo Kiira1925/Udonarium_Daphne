@@ -67,6 +67,14 @@
         <td>送信元キャラのリソースを指定値にします。</td>
       </tr>
       <tr>
+        <td><code>:HP-4 :MP-4</code></td>
+        <td>半角スペース区切りで、複数のリソース操作を同時に処理します。</td>
+      </tr>
+      <tr>
+        <td><code>:HP-4 コメント</code></td>
+        <td>半角スペース以降の <code>:</code> で始まらない文字列はコメントとして残し、コマンド処理から除外します。</td>
+      </tr>
+      <tr>
         <td><code>M</code></td>
         <td>接尾辞。最大値を超えないようにします。</td>
       </tr>
@@ -79,6 +87,7 @@
     <p class="example-note">例: <code>:HP-10+5</code> は <code>-10+5</code> を計算し、HP-5として扱います。</p>
     <p class="example-note">例: <code>:HP-5+&#123;防護&#125;</code> は防護を参照して最終値を計算します。</p>
     <p class="example-note">例: <code>:HP+30M!</code> は最大値を超えず、増減反転も防ぎます。</p>
+    <p class="example-note">例: <code>:HP-4+&#123;防護&#125;! 【ダメージ計算】</code> は先頭のリソース操作だけを処理し、後半をコメントとして残します。</p>
   </section>
 
   <section *ngIf="selectedTab === 'effects'">
