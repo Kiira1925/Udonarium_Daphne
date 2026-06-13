@@ -222,6 +222,14 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
       actions.push({ name: 'チャットパレットを表示', action: () => { this.showChatPalette(this.gameCharacter) } });
       actions.push({ name: '効果管理を開く', action: () => { this.showEffectManagement(this.gameCharacter) } });
     }
+    if (this.isRoundActive) {
+      actions.push({
+        name: this.isActionDone ? '未行動に戻す' : '行動完了にする',
+        action: () => {
+          RoomState.instance.toggleActionDone(this.gameCharacter);
+        }
+      });
+    }
     actions.push(ContextMenuSeparator);
     actions.push({
       name: '共有イベントリに移動', action: () => {
