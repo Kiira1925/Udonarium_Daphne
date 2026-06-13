@@ -3,9 +3,10 @@
     <div>
       <div class="caption">Current Round</div>
       <div class="round-value">{{round}}</div>
+      <div class="round-progress" *ngIf="0 < round">行動完了 {{actionDoneCount}}/{{actionTargetCount}}</div>
     </div>
     <div class="round-actions">
-      <button (click)="incrementRound()" [disabled]="!canManageRound">
+      <button (click)="incrementRound()" [disabled]="!canAdvanceRound">
         <i class="material-icons">add</i>
         <span>+1 Round</span>
       </button>
@@ -16,6 +17,7 @@
     </div>
   </section>
   <div class="caption" *ngIf="!canManageRound">ラウンド操作はGMモード中のみ実行できます。</div>
+  <div class="caption" *ngIf="canManageRound && 0 < round && !roomState.canAdvanceRound()">未行動のテーブル上コマが残っています。</div>
 
   <section class="template-box">
     <div class="section-title">バフテンプレート</div>

@@ -38,6 +38,9 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
   get roomState(): RoomState { return RoomState.instance; }
   get round(): number { return this.roomState.round; }
   get canManageRound(): boolean { return this.roomState.isGM(); }
+  get actionDoneCount(): number { return this.roomState.actionDoneCount(); }
+  get actionTargetCount(): number { return this.roomState.actionTargetCount(); }
+  get canAdvanceRound(): boolean { return this.canManageRound && this.roomState.canAdvanceRound(); }
   get operators(): BuffOperator[] { return ['+', '-', '*']; }
   get effectKinds(): BuffEffectKind[] { return ['stat', 'note']; }
 
@@ -135,7 +138,12 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
       this.message = 'ラウンド操作はGMモード中のユーザーのみ実行できます';
       return;
     }
+    if (!this.roomState.canAdvanceRound()) {
+      this.message = `未行動のテーブル上コマがあります（${this.actionDoneCount}/${this.actionTargetCount}）。全員が行動完了になるまでラウンドを進められません`;
+      return;
+    }
     this.roomState.incrementRound(1);
+    this.message = '';
   }
 
   resetBattle() {

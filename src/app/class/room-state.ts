@@ -293,6 +293,28 @@ export class RoomState extends GameObject {
     return objects.filter((object): object is GameCharacter => object instanceof GameCharacter);
   }
 
+  tableCharacters(): GameCharacter[] {
+    return ObjectStore.instance.getObjects(GameCharacter)
+      .filter(character => character.isVisibleOnTable);
+  }
+
+  actionDoneCount(): number {
+    return this.tableCharacters()
+      .filter(character => this.isActionDone(character))
+      .length;
+  }
+
+  actionTargetCount(): number {
+    return this.tableCharacters().length;
+  }
+
+  canAdvanceRound(): boolean {
+    if (this.round <= 0) return true;
+
+    let characters = this.tableCharacters();
+    return characters.every(character => this.isActionDone(character));
+  }
+
   isActionDone(character: GameCharacter): boolean {
     return this.round > 0 && this.actionDoneCharacterIds.includes(character.identifier);
   }
@@ -460,6 +482,11 @@ export class RoomState extends GameObject {
     let increment = /^\+(\d+)$/.exec(arg);
     if (!increment) {
       this.sendSystemMessage(chatMessage, tabIdentifier, 'ラウンド書式: /round +1 または /round reset');
+      return true;
+    }
+
+    if (!this.canAdvanceRound()) {
+      this.sendSystemMessage(chatMessage, tabIdentifier, `未行動のテーブル上コマがあります（${this.actionDoneCount()}/${this.actionTargetCount()}）。全員が行動完了になるまでラウンドを進められません`);
       return true;
     }
 

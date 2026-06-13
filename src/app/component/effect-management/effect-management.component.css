@@ -32,6 +32,13 @@
   line-height: 1;
 }
 
+.round-progress {
+  color: #555;
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: 3px;
+}
+
 .round-actions {
   display: flex;
   gap: 4px;
