@@ -193,15 +193,35 @@
   white-space: nowrap;
 }
 
-.effect-badge:hover {
+.effect-badge-detail {
+  display: none;
+}
+
+.component:hover .effect-badges {
+  align-items: center;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  max-width: none;
+  width: max-content;
+  z-index: 5;
+}
+
+.component:hover .effect-badge {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
-  line-height: 1.25;
-  max-width: 280px;
+  max-width: none;
   overflow: visible;
   position: relative;
   text-overflow: clip;
-  white-space: normal;
+  white-space: nowrap;
   z-index: 4;
+}
+
+.component:hover .effect-badge-summary {
+  display: none;
+}
+
+.component:hover .effect-badge-detail {
+  display: inline;
 }
 
 .selection-marker {
