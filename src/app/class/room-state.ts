@@ -94,8 +94,14 @@ export class RoomState extends GameObject {
   }
 
   addEffect(target: GameCharacter, name: string, statusName: string, operator: BuffOperator, amount: number, remainingRounds: number, kind: BuffEffectKind = 'stat', description: string = ''): BuffEffect | null {
-    let duplicate = this.effects.find(effect => this.isSameEffect(effect, target.identifier, name, statusName, operator, amount, remainingRounds, kind, description));
-    if (duplicate) return null;
+    let existing = this.effects.find(effect => this.isSameEffectContent(effect, target.identifier, name, statusName, operator, amount, kind, description));
+    if (existing) {
+      if (existing.remainingRounds === remainingRounds) return null;
+
+      let updated = { ...existing, remainingRounds: remainingRounds, createdRound: this.round };
+      this.effects = this.effects.map(effect => effect.id === existing.id ? updated : effect);
+      return updated;
+    }
 
     let newEffect: BuffEffect = {
       id: UUID.generateUuid(),
@@ -788,11 +794,10 @@ export class RoomState extends GameObject {
     return effect.kind === 'note' ? 'note' : 'stat';
   }
 
-  private isSameEffect(effect: BuffEffect, targetIdentifier: string, name: string, statusName: string, operator: BuffOperator, amount: number, remainingRounds: number, kind: BuffEffectKind, description: string): boolean {
+  private isSameEffectContent(effect: BuffEffect, targetIdentifier: string, name: string, statusName: string, operator: BuffOperator, amount: number, kind: BuffEffectKind, description: string): boolean {
     if (effect.targetIdentifier !== targetIdentifier) return false;
     if (this.effectKind(effect) !== kind) return false;
     if (!this.isSameText(effect.name, name)) return false;
-    if (effect.remainingRounds !== remainingRounds) return false;
 
     if (kind === 'note') return this.isSameText(effect.description ?? '', description);
 
