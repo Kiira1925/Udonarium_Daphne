@@ -21,7 +21,7 @@ import { PanelService } from 'service/panel.service';
 export class PeerMenuComponent implements OnInit, OnDestroy, AfterViewInit {
 
   targetUserId: string = '';
-  networkService = Network
+  networkService = Network;
   gameRoomService = ObjectStore.instance;
   help: string = '';
   isPasswordVisible = false;
@@ -84,6 +84,16 @@ export class PeerMenuComponent implements OnInit, OnDestroy, AfterViewInit {
     this.isPasswordVisible = !this.isPasswordVisible;
   }
 
+  enableGMMode() {
+    const confirmed = confirm('GMモードを有効にすると、秘匿中のステータスやGM向けチャット内容を見られるようになります。\nこの状態で操作を続けますか？');
+    if (!confirmed) return;
+    this.roomState.localGMMode = true;
+  }
+
+  disableGMMode() {
+    this.roomState.localGMMode = false;
+  }
+
   stringFromSessionGrade(grade: PeerSessionGrade): string {
     return PeerSessionGrade[grade] ?? PeerSessionGrade[PeerSessionGrade.UNSPECIFIED];
   }
@@ -98,21 +108,8 @@ export class PeerMenuComponent implements OnInit, OnDestroy, AfterViewInit {
     return peerCursor ? peerCursor.name : '';
   }
 
-  isPeerGM(peerId: string): boolean {
-    const userId = this.findUserId(peerId);
-    return this.roomState.isGM(userId);
-  }
-
   isPeerRoomMaster(peerId: string): boolean {
     const userId = this.findUserId(peerId);
     return this.roomState.isRoomMaster(userId);
-  }
-
-  grantGM(peerId: string) {
-    this.roomState.grantGM(this.findUserId(peerId));
-  }
-
-  revokeGM(peerId: string) {
-    this.roomState.revokeGM(this.findUserId(peerId));
   }
 }

@@ -49,6 +49,7 @@ export interface CharacterEffectState {
 @SyncObject('room-state')
 export class RoomState extends GameObject {
   private static readonly identifier = 'RoomState';
+  private static readonly gmModeStorageKey = 'udonarium-daphne-gm-mode';
 
   static get instance(): RoomState {
     let state = ObjectStore.instance.get<RoomState>(RoomState.identifier);
@@ -63,7 +64,14 @@ export class RoomState extends GameObject {
   @SyncVar() effects: BuffEffect[] = [];
   @SyncVar() buffTemplates: BuffTemplate[] = [];
   @SyncVar() roomMasterUserId: string = '';
-  @SyncVar() gmUserIds: string[] = [];
+
+  get localGMMode(): boolean {
+    return localStorage.getItem(RoomState.gmModeStorageKey) === 'true';
+  }
+
+  set localGMMode(isEnabled: boolean) {
+    localStorage.setItem(RoomState.gmModeStorageKey, isEnabled ? 'true' : 'false');
+  }
 
   onStoreAdded() {
     super.onStoreAdded();
@@ -105,7 +113,6 @@ export class RoomState extends GameObject {
     if (!this.roomMasterUserId) {
       this.roomMasterUserId = userId;
     }
-    this.grantGMInternal(userId);
   }
 
   isRoomMaster(userId: string = Network.peer.userId): boolean {
@@ -113,23 +120,8 @@ export class RoomState extends GameObject {
   }
 
   isGM(userId: string = Network.peer.userId): boolean {
-    return !!userId && this.gmUserIds.includes(userId);
-  }
-
-  canManageGM(userId: string = Network.peer.userId): boolean {
-    return this.isGM(userId);
-  }
-
-  grantGM(userId: string): boolean {
-    if (!this.canManageGM() || !userId) return false;
-    return this.grantGMInternal(userId);
-  }
-
-  revokeGM(userId: string): boolean {
-    if (!this.canManageGM() || !userId || this.isRoomMaster(userId)) return false;
-    if (!this.gmUserIds.includes(userId)) return false;
-    this.gmUserIds = this.gmUserIds.filter(item => item !== userId);
-    return true;
+    if (!userId || userId !== Network.peer.userId) return false;
+    return this.localGMMode;
   }
 
   canAccessGMCharacter(character: GameCharacter): boolean {
@@ -547,12 +539,6 @@ export class RoomState extends GameObject {
           && item.operator === template.operator
           && Number(item.amount) === Number(template.amount))
     );
-  }
-
-  private grantGMInternal(userId: string): boolean {
-    if (this.gmUserIds.includes(userId)) return false;
-    this.gmUserIds = this.gmUserIds.concat(userId);
-    return true;
   }
 
   private findNumberResource(character: GameCharacter, resourceName: string): DataElement | null {

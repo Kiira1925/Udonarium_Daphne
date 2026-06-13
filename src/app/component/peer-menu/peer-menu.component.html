@@ -15,9 +15,16 @@
   </span>
 </div>
 
-<div *ngIf="networkService.isOpen" style="font-size: 12px; margin-top: 4px;">
-  GMモード: <strong>{{isGM ? '有効' : '無効'}}</strong>
-  <span *ngIf="roomState.isRoomMaster()"> / ルームマスター</span>
+<div class="gm-mode-box">
+  <div>
+    GMモード:
+    <strong [class.gm-enabled]="isGM">{{isGM ? '有効' : '無効'}}</strong>
+  </div>
+  <div class="gm-mode-description">
+    有効にすると秘匿中のステータスやGM向けチャット内容を確認できます。
+  </div>
+  <button *ngIf="!isGM" (click)="enableGMMode()">GMモードを有効にする</button>
+  <button *ngIf="isGM" (click)="disableGMMode()">GMモードを解除する</button>
 </div>
 
 <ng-container *ngIf="networkService.peer.isRoom">
@@ -45,8 +52,7 @@
   <div class="peer-info">
     <span *ngIf="!peer.isOpen">[接続中]</span>
     <span>参加者: {{findUserId(peer.peerId)}} [{{findPeerName(peer.peerId)}}]</span>
-    <span *ngIf="isPeerRoomMaster(peer.peerId)"> / ルームマスター</span>
-    <span *ngIf="!isPeerRoomMaster(peer.peerId) && isPeerGM(peer.peerId)"> / GM</span>
+    <span *ngIf="isPeerRoomMaster(peer.peerId)"> / ルーム作成者</span>
     <div class="session-info">
       <span>接続状態:
         Grade:{{stringFromSessionGrade(peer.session.grade)}} ({{peer.session.description}})
@@ -54,10 +60,6 @@
         Speed:{{(peer.session.speed * 100).toFixed(0)}}%
         Ping:{{peer.session.ping.toFixed(1)}}ms
       </span>
-    </div>
-    <div *ngIf="roomState.canManageGM()" style="font-size: 12px; margin-top: 2px;">
-      <button *ngIf="!isPeerGM(peer.peerId)" (click)="grantGM(peer.peerId)">GM権限を付与</button>
-      <button *ngIf="isPeerGM(peer.peerId) && !isPeerRoomMaster(peer.peerId)" (click)="revokeGM(peer.peerId)">GM権限を解除</button>
     </div>
   </div>
 </div>
