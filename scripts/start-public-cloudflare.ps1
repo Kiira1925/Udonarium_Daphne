@@ -56,23 +56,29 @@ function Start-LoggedQuickTunnel {
   Write-Host "  $UrlPath"
   Write-Host ''
 
-  & cloudflared @Arguments 2>&1 | ForEach-Object {
-    $line = $_.ToString()
-    Add-Content -LiteralPath $LogPath -Value $line -Encoding UTF8
+  $previousErrorActionPreference = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    & cloudflared @Arguments 2>&1 | ForEach-Object {
+      $line = $_.ToString()
+      Add-Content -LiteralPath $LogPath -Value $line -Encoding UTF8
 
-    $match = [regex]::Match($line, 'https://[-a-z0-9]+\.trycloudflare\.com')
-    if ($match.Success) {
-      $url = $match.Value.TrimEnd('/')
-      Set-Content -LiteralPath $UrlPath -Value $url -Encoding UTF8
-      Write-Host ''
-      Write-Host '============================================================'
-      Write-Host "PUBLIC URL: $url"
-      Write-Host 'Share this URL. Old trycloudflare URLs stop working when the tunnel stops.'
-      Write-Host '============================================================'
-      Write-Host ''
+      $match = [regex]::Match($line, 'https://[-a-z0-9]+\.trycloudflare\.com')
+      if ($match.Success) {
+        $url = $match.Value.TrimEnd('/')
+        Set-Content -LiteralPath $UrlPath -Value $url -Encoding UTF8
+        Write-Host ''
+        Write-Host '============================================================'
+        Write-Host "PUBLIC URL: $url"
+        Write-Host 'Share this URL. Old trycloudflare URLs stop working when the tunnel stops.'
+        Write-Host '============================================================'
+        Write-Host ''
+      }
+
+      Write-Host $line
     }
-
-    Write-Host $line
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
   }
 }
 
