@@ -29,10 +29,12 @@ Framework preset: Angular または None
 Build command: npm run build:pages
 Build output directory: dist/udonarium-daphne
 Root directory: /
-Deploy command: 空欄
+Deploy command: npx wrangler pages deploy dist/udonarium-daphne --project-name=udonarium-daphne
 ```
 
-Cloudflare Pages の Git 連携では、ビルド後の配置は Pages 側が自動で行います。`npx wrangler deploy` は Workers 用のコマンドとして解釈され、Angular 17 プロジェクトでは自動設定に失敗するため指定しないでください。
+Deploy command を空欄にできない画面では、Pages 用の `wrangler pages deploy` を指定してください。`npx wrangler deploy` は Workers 用のコマンドとして解釈され、Angular 17 プロジェクトでは自動設定に失敗します。
+
+プロジェクト名を別名で作成した場合は、`--project-name=udonarium-daphne` の部分を Cloudflare Pages のプロジェクト名に置き換えてください。
 
 ## 環境変数
 
