@@ -173,9 +173,10 @@
   justify-content: center;
   left: 0;
   max-width: 260px;
-  pointer-events: none;
+  pointer-events: auto;
   position: absolute;
   bottom: calc(100% + 36px);
+  z-index: 3;
 }
 
 .effect-badge {
@@ -190,6 +191,17 @@
   padding: 2px 5px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.effect-badge:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  line-height: 1.25;
+  max-width: 280px;
+  overflow: visible;
+  position: relative;
+  text-overflow: clip;
+  white-space: normal;
+  z-index: 4;
 }
 
 .selection-marker {
