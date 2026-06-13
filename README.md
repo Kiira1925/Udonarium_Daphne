@@ -3,7 +3,7 @@
 Udonarium Daphne は、Udonarium をベースにしたブラウザ動作のオンラインセッション支援ツールです。
 軽量なオンライン卓の操作感を保ちながら、GM向けの秘匿管理、バフ/デバフ管理、リソース操作コマンド、ローカル環境からの一時公開機能を追加しています。
 
-バージョン: `0.1.10`
+バージョン: `0.1.11`
 
 状態: 公開前プレビュー
 
@@ -157,6 +157,17 @@ https://example.trycloudflare.com/
 - 公開中はURLを知っているユーザーがアクセスできます。
 - セッション終了後はバッチまたは `cloudflared` を停止してください。
 
+## Cloudflare Pages + Functions
+
+常設公開する場合は Cloudflare Pages + Functions で、静的なアプリ本体と SkyWay トークン発行 API を同一ドメインに配置できます。
+
+- Build command: `npm run build:pages`
+- Build output directory: `dist/udonarium-daphne`
+- Functions directory: `functions`
+- 必須環境変数: `SKYWAY_APP_ID`, `SKYWAY_SECRET_KEY`
+
+詳しい手順は [CLOUDFLARE-PAGES.md](CLOUDFLARE-PAGES.md) を参照してください。
+
 ## 開発
 
 Angular の開発サーバーを起動します。
@@ -171,7 +182,11 @@ npm start
 npm run build -- --configuration development
 ```
 
-環境によっては本番ビルド時に外部の Google Fonts 取得が必要になる場合があります。オフラインまたはネットワーク制限下での確認には development 構成を使ってください。
+Cloudflare Pages 向けの本番ビルドを実行します。
+
+```bash
+npm run build:pages
+```
 
 ## リポジトリ
 

@@ -1,6 +1,6 @@
 {
   "name": "udonarium-daphne",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "license": "MIT",
   "scripts": {
     "ng": "ng",
@@ -8,6 +8,7 @@
     "serve:local": "npm run build -- --configuration development && node local-https-server.cjs",
     "serve:public": "npm run build -- --configuration development && node -e \"process.env.HOST='0.0.0.0'; require('./local-https-server.cjs')\"",
     "build": "ng build",
+    "build:pages": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
