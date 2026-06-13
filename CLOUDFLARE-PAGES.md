@@ -29,27 +29,9 @@ Framework preset: Angular または None
 Build command: npm run build:pages
 Build output directory: dist/udonarium-daphne
 Root directory: /
-Deploy command: npx wrangler pages deploy dist/udonarium-daphne --project-name=udonarium-daphne
 ```
 
-Deploy command を空欄にできない画面では、Pages 用の `wrangler pages deploy` を指定してください。`npx wrangler deploy` は Workers 用のコマンドとして解釈され、Angular 17 プロジェクトでは自動設定に失敗します。
-
-プロジェクト名を別名で作成した場合は、`--project-name=udonarium-daphne` の部分を Cloudflare Pages のプロジェクト名に置き換えてください。
-
-`Authentication error [code: 10000]` が出る場合は、`CLOUDFLARE_API_TOKEN` の権限不足です。Cloudflare の API Token に、対象アカウントの Pages プロジェクトを更新できる権限を付与してください。
-
-最低限必要な権限の目安:
-
-```text
-Account - Cloudflare Pages - Edit
-```
-
-環境によって Wrangler が追加情報を読むため、必要に応じて以下も追加します。
-
-```text
-Account - Account Settings - Read
-User - User Details - Read
-```
+Cloudflare Pages の Git 連携では、ビルド後の配置は Pages 側の設定に従って行います。アカウントやトークンに関する詳細は、利用する Cloudflare 環境の管理方針に合わせて設定してください。
 
 ## 環境変数
 
