@@ -150,11 +150,18 @@
 }
 
 .action-done-mark {
-  color: #b9f6ca;
   font-size: 14px;
   line-height: 1;
   margin-left: 4px;
   vertical-align: -2px;
+}
+
+.action-done-mark.is-done {
+  color: #b9f6ca;
+}
+
+.action-done-mark.is-pending {
+  color: rgba(220, 220, 220, 0.55);
 }
 
 .effect-badges {

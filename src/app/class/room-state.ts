@@ -307,6 +307,9 @@ export class RoomState extends GameObject {
   toggleActionDone(character: GameCharacter): boolean {
     let isDone = !this.isActionDone(character);
     this.setActionDone(character, isDone);
+    if (isDone) {
+      this.sendMainSystemMessage(`${character.name} が行動完了`);
+    }
     return isDone;
   }
 
@@ -663,6 +666,26 @@ export class RoomState extends GameObject {
       text: text,
       round: this.round,
       gmText: gmText,
+    };
+    chatTab.addMessage(message);
+  }
+
+  private sendMainSystemMessage(text: string) {
+    let chatTab = ObjectStore.instance.get<ChatTab>('MainTab') ?? ChatTabList.instance.chatTabs[0];
+    if (!chatTab) return;
+
+    let now = Date.now();
+    let latest = chatTab.latestTimeStamp;
+    let message: ChatMessageContext = {
+      identifier: '',
+      tabIdentifier: chatTab.identifier,
+      from: 'System-RoomState',
+      timestamp: now <= latest ? latest + 1 : now,
+      imageIdentifier: '',
+      tag: 'system room-state action-done',
+      name: 'Round',
+      text: text,
+      round: this.round,
     };
     chatTab.addMessage(message);
   }

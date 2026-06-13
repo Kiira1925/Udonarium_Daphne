@@ -31,7 +31,12 @@
                 [ngStyle]="{'transform': 'translateX(-50%) translateX(' + size * gridSize / 2 +'px) rotateY(' + rotateY + ')'}">
                 <div class="has-length-limit">
                   {{name}}
-                  <span *ngIf="isRoundActive && isActionDone" class="action-done-mark material-icons">check_circle</span>
+                  <span *ngIf="isRoundActive"
+                    class="action-done-mark material-icons"
+                    [class.is-done]="isActionDone"
+                    [class.is-pending]="!isActionDone">
+                    {{isActionDone ? 'check_circle' : 'radio_button_unchecked'}}
+                  </span>
                 </div>
               </div>
             </ng-container>
