@@ -1,161 +1,184 @@
 # Udonarium Daphne
 
-[Udonarium Daphne][udonarium-url]はWebブラウザで動作するボードゲームオンラインセッション支援ツールです。
+Udonarium Daphne は、Udonarium をベースにしたブラウザ動作のオンラインセッション支援ツールです。
+軽量なオンライン卓の操作感を保ちながら、GM向けの秘匿管理、バフ/デバフ管理、リソース操作コマンド、ローカル環境からの一時公開機能を追加しています。
 
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/TK11235/udonarium/blob/master/LICENSE)
+バージョン: `0.1.0`  
+状態: 公開前プレビュー
 
-[![Udonarium Daphne](docs/images/ss.jpg "スクリーンショット")][udonarium-url]
+![Udonarium Daphne screenshot](docs/images/ss.jpg)
 
-## クイックスタート
+## 主な機能
 
-今すぐ試して利用できる公開サーバを用意しています。  
-推奨ブラウザはデスクトップ版Google Chrome、またはデスクトップ版Mozilla Firefoxです。
+- ブラウザ上で動作するオンライン卓
+- キャラコマ、カード、ダイス、チャット、チャットパレット、共有メモ、マスク、地形、ルーム保存/読込
+- SkyWay 2023 対応
+- SkyWay トークン発行用バックエンド連携
+- HTTPS ローカル起動
+- Cloudflare Quick Tunnel による一時公開用バッチ
+- GMモードとGM作成キャラクターの閲覧制限
+- キャラクターごとのステータス秘匿
+- バフ/デバフとラウンド管理
+- キャラクターに紐づくバフ/デバフテンプレート
+- キャラzip出力時のテンプレート/付与中効果の同梱
+- BCDice 風の四則演算を使ったリソース操作コマンド
+- ラウンド変更時のメインチャット通知と、各チャットへのラウンド注釈
+- タブ切り替え式のヘルプページ
 
-[**Udonarium Daphneをはじめる**][udonarium-url]
+## Daphne で追加した要素
 
-## 目次
+### GMモード
 
-- [機能](#機能)
-- [サーバ設置](#サーバ設置)
-- [開発者クイックスタート](#開発者クイックスタート)
-- [開発に寄与する](#開発に寄与する)
-- [今後の開発](#今後の開発)
-- [License](#license)
+ルーム作成者はデフォルトでGMになります。GMモード中のユーザーだけが、他のGMモードユーザーへGM権限を付与できます。
 
-## 機能
+GMが作成したキャラクターは、非GMユーザーから詳細表示やチャットパレット選択ができないように制限できます。GMがzipから追加したキャラクターも、GM作成キャラクターとして扱われます。
 
-- **オンラインセッション**
-  - ルーム機能
-  - 複数テーブル管理
-  - テーブルマスク、立体地形
-  - コマ、カード、共有メモ
-  - チャット送受信、チャットパレット
-  - ダイスボット（[BCDice](https://github.com/bcdice/bcdice-js)）
-  - 画像ファイル共有
-  - BGM再生
-  - セーブデータ生成（ZIP形式）
+### ステータス秘匿
 
-- **ブラウザ間通信**
-  - WebRTCを利用したブラウザ間通信を実現しています。  
-    ユーザ間で通信接続した後の全ての処理をWebブラウザ上で完結させることを目指しています。
+キャラクターごとにステータス秘匿フラグを設定できます。秘匿中のキャラクターは、非GMユーザーの画面ではマウスオーバー時のステータス表示、インベントリ上の簡易ステータス、リソース操作コマンドのチャット表示などが `??` になります。
 
-- **軽量&リアルタイム**
-  - 軽量で快適に動作し、ユーザの操作は別のユーザにリアルタイムに反映されます。
+GMユーザーには秘匿中の値も通常どおり表示されます。
 
-## サーバ設置
+### バフ/デバフとラウンド
 
-ユーザ自身でWebサーバを用意してUdonarium Daphneを利用することができます。
+キャラクターに対して、以下のような効果を管理できます。
 
-#### 1. Webサーバにコンテンツを配置
+- 対象ステータス
+- 加算、減算、乗算、除算、半減などの効果
+- 自由記述の効果
+- 残りラウンド数
 
-Udonarium Daphneのリリース版をダウンロードして展開し、`index.html`などコンテンツ一式をWebサーバに配置します。  
-必ず**HTTPS環境のWebサーバ**に配置してください。
+ルーム全体のラウンドを進めると、付与中の効果時間が自動で減少します。残りラウンドが0になった効果は削除されます。
 
-#### 2. Udonariumバックエンドの配置
+キャラクターごとにバフ/デバフテンプレートを登録でき、UIまたはチャットコマンドから実行できます。キャラzipとして保存した場合、そのキャラクターに紐づくテンプレートと付与中効果も一緒に保存され、読み込み時に新しいキャラクターへ紐づけ直されます。
 
-[Udonariumバックエンド][udonarium-backend-repo]のサーバを準備します。  
-詳細はUdonariumバックエンドのリポジトリの`README.md`を参照してください。
+### リソース操作コマンド
 
-#### 3. Udonarium Daphneの設定ファイル変更
+リソース操作コマンドでは四則演算を利用できます。先頭に `:` を付けると、続くリソース値へ BCDice による計算結果を反映します。
 
-Webサーバに配置したUdonarium Daphneの`assets/config.yaml`を編集して、`backend.url`にUdonariumバックエンドのURLを記述します。
+書式例:
 
-```yaml
-backend:
-  mode: skyway2023
-  url: https://your-udonarium-backend-url/ #Your Backend API URL
-...
+```text
+:リソース名 式
 ```
 
-WebブラウザからUdonarium Daphneの`index.html`にアクセスしてエラーが発生していなければ完了です。  
-上手く動作しない時は付属の`上手くサーバで動かない時Q&A.txt`を参照してください。
+具体例:
 
-## 開発者クイックスタート
+```text
+:HP-10+5
+```
 
-開発環境を用意するとソースコードの修正や機能追加を行うことができます。
+この場合は `HP-5` として扱われます。
 
-### 開発環境
+最大値を超えないようにするオプションや、与える値が0以下にならないようにするオプションも利用できます。
 
-[Node.js](https://nodejs.org/)と[npm](https://www.npmjs.com/)が必要です。
+## 必要環境
 
-開発言語はTypeScriptを使用し、[Angular](https://angular.jp/)のフレームワークを使用して実装されています。  
-環境構築の手順は[Angular公式ページのチュートリアル](https://angular.jp/tutorials/first-app)を参考にしてください。
+- Node.js
+- npm
+- Google Chrome、Microsoft Edge、Firefox などのモダンブラウザ
+- SkyWay/WebRTC を利用する場合は HTTPS 環境
 
-#### Angular CLI
+## セットアップ
 
-開発を効率化するCLIツールとして[Angular CLI](https://github.com/angular/angular-cli)を利用しています。  
-`ng`コマンドを使用するのに必要です。
-
-#### SkyWay
-
-Udonarium DaphneはWebRTCを使用しており、WebRTC向けのサービスとして[SkyWay][SkyWay-url]を利用しています。  
-SkyWayのアカウントとアプリケーション情報が必要です。
-
-#### Udonariumバックエンド
-
- [SkyWay][SkyWay-url]を利用するには認証トークン（SkyWay Auth Token）を都度作成する必要がありますが、Webブラウザ側で認証トークンを作成するのはセキュリティ上の観点から望ましくありません。  
-そこで、Webブラウザ側で実行できない処理は[Udonariumバックエンド][udonarium-backend-repo]のWeb APIとして実行します。
-
-ローカル環境で開発を行う際には、Udonariumバックエンドの開発用ローカルサーバを使用することをおすすめします。
-
-### Udonarium Daphneの実行
-
-リポジトリをダウンロードした後、初回はリポジトリのディレクトリで以下のコマンドを実行してください。
+依存パッケージをインストールします。
 
 ```bash
-npm i
+npm install
 ```
 
-#### 開発用ローカルサーバ
+一時公開用バッチを使う場合は、環境変数ファイルを作成します。
 
-開発作業を行う際には、`src/assets/config.yaml`を編集して`backend.url`にUdonariumバックエンドのURLを記述してください。
+```bat
+copy .env.public.example .env.public
+```
 
-以下のコマンドを実行すると`https://localhost:4200/`でUdonarium Daphneの開発用ローカルサーバが起動します。  
-必ず`--ssl`オプションを使用してHTTPSのサーバを起動してください。SkyWayの一部の機能はHTTPS環境でしか実行できません。
+`.env.public` に SkyWay の値を設定します。
+
+```env
+SKYWAY_APP_ID=your-skyway-application-id
+SKYWAY_SECRET_KEY=your-skyway-secret-key
+SKYWAY_LOBBY_SIZE=4
+PORT=4200
+CLOUDFLARED_PROTOCOL=http2
+```
+
+`.env.public` は秘密情報を含むため、Git管理対象外です。
+
+## ローカル起動
+
+HTTPS のローカルサーバーで起動します。
 
 ```bash
-ng serve --ssl
+npm run serve:local
 ```
 
-開発用ローカルサーバが起動している状態でソースコードを変更すると、アプリケーション全体が自動的にホットリロードされます。
+通常は以下のURLで開きます。
 
-#### 本番環境向けビルド
+```text
+https://127.0.0.1:4200/
+```
 
-以下のコマンドでソースコード全体のビルドを実行します。ビルド成果物は`dist`ディレクトリ配下に格納されます。
+ポートが使用中の場合は、空いている別ポートが使われます。実際のURLは起動時のターミナル表示を確認してください。
+
+## 外部向け一時公開
+
+Cloudflare Quick Tunnel を使って、ローカルPC上の Udonarium Daphne を一時的に公開できます。
+
+事前に `cloudflared` をインストールします。
 
 ```bash
-ng build
+winget install --id Cloudflare.cloudflared
 ```
 
-## 開発に寄与する
+その後、以下を実行します。
 
-バグを報告したり、ドキュメントを改善したり、開発の手助けをしたりしたいですか？
+```bat
+start-public-cloudflare.bat
+```
 
-報告や要望の窓口として[GitHubのIssue](https://github.com/TK11235/udonarium/issues)、または[X（Twitter）](https://x.com/TK11235)を利用できます。  
-コードの[Pull Request](https://github.com/TK11235/udonarium/pulls)も歓迎です。
+起動後、ターミナルに以下のようなURLが表示されます。
 
-ただ、難易度や優先度の都合によりそっとしたままになる可能性があります。
+```text
+https://example.trycloudflare.com/
+```
 
-### 報告
+このURLを参加者に共有すると、外部ユーザーも接続できます。
 
-バグ報告では、バグを再現できる必要十分な条件について、分かっている範囲で詳しく書いてください。  
-基本的には「報告を受けて改修 → 次回更新時に反映」の流れで対応する予定です。
+注意:
 
-### 要望
+- Quick Tunnel のURLは起動するたびに変わります。
+- 公開中はURLを知っているユーザーがアクセスできます。
+- セッション終了後はバッチまたは `cloudflared` を停止してください。
 
-機能要望では「何故それが必要なのか」について説明があると良いです。
+## 開発
 
-### Pull Request
+Angular の開発サーバーを起動します。
 
-作成したコードやドキュメントをこのリポジトリに反映させたい時はPull Request（PR）を送ってください。
+```bash
+npm start
+```
 
-PRのコードが完全ではない場合でも作業中PRとして送ることができます。  
-その場合、作業中である旨をPRタイトルか説明文に付け加えてください。
+開発用ビルドを実行します。
+
+```bash
+npm run build -- --configuration development
+```
+
+環境によっては本番ビルド時に外部の Google Fonts 取得が必要になる場合があります。オフラインまたはネットワーク制限下での確認には development 構成を使ってください。
+
+## リポジトリ
+
+https://github.com/Kiira1925/Udonarium_Daphne
+
+## Credits
+
+Udonarium Daphne は Udonarium をベースにしています。
+
+- Original Udonarium: https://github.com/TK11235/udonarium
+- BCDice: https://github.com/bcdice/bcdice-js
+- SkyWay: https://skyway.ntt.com/
 
 ## License
 
-[MIT License](https://github.com/TK11235/udonarium/blob/master/LICENSE)
-
-[udonarium-url]: https://udonarium.app/
-[udonarium-backend-repo]: https://github.com/TK11235/udonarium-backend
-[SkyWay-url]: https://skyway.ntt.com/
+MIT License. See [LICENSE](LICENSE).
