@@ -36,6 +36,21 @@ Deploy command を空欄にできない画面では、Pages 用の `wrangler pag
 
 プロジェクト名を別名で作成した場合は、`--project-name=udonarium-daphne` の部分を Cloudflare Pages のプロジェクト名に置き換えてください。
 
+`Authentication error [code: 10000]` が出る場合は、`CLOUDFLARE_API_TOKEN` の権限不足です。Cloudflare の API Token に、対象アカウントの Pages プロジェクトを更新できる権限を付与してください。
+
+最低限必要な権限の目安:
+
+```text
+Account - Cloudflare Pages - Edit
+```
+
+環境によって Wrangler が追加情報を読むため、必要に応じて以下も追加します。
+
+```text
+Account - Account Settings - Read
+User - User Details - Read
+```
+
 ## 環境変数
 
 Pages の Settings > Environment variables に以下を設定します。
