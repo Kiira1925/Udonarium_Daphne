@@ -1,0 +1,123 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.component {
+  box-sizing: border-box;
+  color: #333;
+  font-size: 13px;
+  height: 100%;
+  line-height: 1.55;
+  overflow: auto;
+  padding: 12px 14px 18px;
+}
+
+.help-tabs {
+  align-items: stretch;
+  background-color: rgba(240, 218, 189, 0.9);
+  border: solid 1px #555;
+  border-radius: 5px;
+  display: flex;
+  margin: 0 0 12px;
+  overflow: hidden;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.help-tabs button {
+  background: transparent;
+  border: 0;
+  border-right: 1px solid rgba(85, 85, 85, 0.45);
+  color: #444;
+  cursor: pointer;
+  flex: 1 1 auto;
+  font: inherit;
+  padding: 5px 8px;
+}
+
+.help-tabs button:last-child {
+  border-right: 0;
+}
+
+.help-tabs button:hover {
+  background-color: #888;
+  color: #eee;
+}
+
+.help-tabs button.active {
+  background: #555;
+  color: #eee;
+}
+
+section {
+  border-bottom: 1px dotted #999;
+  padding: 8px 0 12px;
+}
+
+section:first-child {
+  padding-top: 0;
+}
+
+h2 {
+  font-size: 15px;
+  margin: 14px 0 8px;
+}
+
+h2:first-child {
+  margin-top: 0;
+}
+
+p {
+  margin: 8px 0 0;
+}
+
+.example-note {
+  color: #666;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+dl {
+  margin: 0;
+}
+
+dt {
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+dd {
+  margin: 2px 0 0 12px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  border-bottom: 1px solid #ddd;
+  padding: 5px 6px;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background: #eee;
+  font-size: 12px;
+}
+
+td:first-child {
+  white-space: nowrap;
+  width: 1%;
+}
+
+code {
+  background: rgba(0, 0, 0, 0.07);
+  border-radius: 3px;
+  font-family: Consolas, monospace;
+  padding: 1px 4px;
+}

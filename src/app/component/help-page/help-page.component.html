@@ -1,0 +1,162 @@
+<div class="component">
+  <nav class="help-tabs">
+    <button [class.active]="selectedTab === 'basic'" (click)="selectedTab = 'basic'">基本操作</button>
+    <button [class.active]="selectedTab === 'commands'" (click)="selectedTab = 'commands'">チャットコマンド</button>
+    <button [class.active]="selectedTab === 'effects'" (click)="selectedTab = 'effects'">バフ/ラウンド</button>
+    <button [class.active]="selectedTab === 'gm'" (click)="selectedTab = 'gm'">GM/秘匿</button>
+  </nav>
+
+  <section *ngIf="selectedTab === 'basic'">
+    <h2>コマ選択</h2>
+    <dl>
+      <dt>Ctrl + 左クリック</dt>
+      <dd>コマの選択と選択解除を切り替えます。選択中のコマの上部には矢印アイコンが表示されます。</dd>
+      <dt>範囲選択</dt>
+      <dd>テーブル上をドラッグすると、範囲内のオブジェクトをまとめて選択できます。</dd>
+      <dt>選択中コマへの付与</dt>
+      <dd>バフ、デバフ、テンプレートは現在選択されているコマへ付与されます。</dd>
+    </dl>
+
+    <h2>パネルとファイル</h2>
+    <dl>
+      <dt>キャラコマの詳細</dt>
+      <dd>コマを右クリックして詳細を開きます。キャラクターシートでは画像、ステータス、チャットパレットなどを編集できます。</dd>
+      <dt>キャラコマの効果管理</dt>
+      <dd>コマを右クリックし、チャットパレット表示の下にある「効果管理を開く」から、そのキャラを選択した状態で効果管理を開けます。</dd>
+      <dt>zip読み込み</dt>
+      <dd>保存済みzipはブラウザ画面へドロップして読み込みます。GMがzip形式のキャラを追加した場合、そのキャラはGM作成キャラとして扱われます。</dd>
+      <dt>キャラzip保存</dt>
+      <dd>キャラコマをzip保存すると、そのキャラに登録されたバフ/デバフテンプレートと付与中効果も一緒に保存されます。読み込み時は新しいキャラへ紐づけ直されます。</dd>
+      <dt>外部公開</dt>
+      <dd>公開用バッチを起動した場合は、cloudflared が表示する <code>https://*.trycloudflare.com/</code> のURLを共有します。</dd>
+    </dl>
+  </section>
+
+  <section *ngIf="selectedTab === 'commands'">
+    <h2>ステータス参照</h2>
+    <table>
+      <tr>
+        <th>書式</th>
+        <th>説明</th>
+      </tr>
+      <tr>
+        <td><code>2d6+&#123;ステータス名&#125;</code></td>
+        <td>送信元キャラのステータスを参照して判定します。対象ステータスにバフ/デバフがある場合は反映されます。</td>
+      </tr>
+    </table>
+    <p class="example-note">例: <code>2d6+&#123;筋力&#125;</code> は送信元キャラの筋力を加算します。</p>
+
+    <h2>リソース操作</h2>
+    <table>
+      <tr>
+        <th>書式</th>
+        <th>説明</th>
+      </tr>
+      <tr>
+        <td><code>:リソース名+値</code></td>
+        <td>送信元キャラのリソースを増加します。値にはBCDice、四則演算、<code>&#123;ステータス名&#125;</code> 参照を使用できます。</td>
+      </tr>
+      <tr>
+        <td><code>:リソース名-値</code></td>
+        <td>送信元キャラのリソースを減少します。式全体を計算した結果が反映されます。</td>
+      </tr>
+      <tr>
+        <td><code>:リソース名=値</code></td>
+        <td>送信元キャラのリソースを指定値にします。</td>
+      </tr>
+      <tr>
+        <td><code>M</code></td>
+        <td>接尾辞。最大値を超えないようにします。</td>
+      </tr>
+      <tr>
+        <td><code>!</code></td>
+        <td>接尾辞。ダメージ計算が回復に反転するなど、リソースに与える値が0以下になるケースを防ぎます。</td>
+      </tr>
+    </table>
+    <p class="example-note">例: <code>:HP-1d6</code> はHPからBCDiceの結果を減らします。</p>
+    <p class="example-note">例: <code>:HP-10+5</code> は <code>-10+5</code> を計算し、HP-5として扱います。</p>
+    <p class="example-note">例: <code>:HP-5+&#123;防護&#125;</code> は防護を参照して最終値を計算します。</p>
+    <p class="example-note">例: <code>:HP+30M!</code> は最大値を超えず、増減反転も防ぎます。</p>
+  </section>
+
+  <section *ngIf="selectedTab === 'effects'">
+    <h2>ラウンド管理</h2>
+    <table>
+      <tr>
+        <th>書式</th>
+        <th>説明</th>
+      </tr>
+      <tr>
+        <td><code>/round +1</code></td>
+        <td>ラウンドを1増加します。メインチャットに <code>【1ラウンド目】</code> のように表示され、バフ/デバフの残りラウンドも減少します。</td>
+      </tr>
+      <tr>
+        <td><code>/round reset</code></td>
+        <td>ラウンドを0に戻し、付与中の効果を削除します。戦闘終了時のリセットに使用します。</td>
+      </tr>
+    </table>
+    <p>ラウンドが0以外の場合、各チャットには <code>1R</code> のようなラウンド注釈が付きます。</p>
+
+    <h2>バフ/デバフ</h2>
+    <table>
+      <tr>
+        <th>書式</th>
+        <th>説明</th>
+      </tr>
+      <tr>
+        <td><code>/buff 効果名/対象+数値/ラウンド</code></td>
+        <td>対象ステータスへ数値を加算する効果を、指定ラウンド分付与します。</td>
+      </tr>
+      <tr>
+        <td><code>/buff 効果名/対象-数値/ラウンド</code></td>
+        <td>対象ステータスから数値を減算する効果を、指定ラウンド分付与します。</td>
+      </tr>
+      <tr>
+        <td><code>/buff 効果名/対象*倍率/ラウンド</code></td>
+        <td>対象ステータスへ乗算補正を行う効果を付与します。半減などに使用できます。</td>
+      </tr>
+      <tr>
+        <td><code>/buff 効果名/自由記述/ラウンド</code></td>
+        <td>ステータスを指定せず、説明文のみの効果を付与します。</td>
+      </tr>
+      <tr>
+        <td><code>/buff テンプレート名</code></td>
+        <td>送信元キャラに登録済みのテンプレートを、選択中のコマへ付与します。</td>
+      </tr>
+    </table>
+    <p class="example-note">例: <code>/buff 強化/筋力+2/2</code> は「強化」という名前の筋力を+2する効果を2ラウンド付与します。</p>
+    <p class="example-note">例: <code>/buff 有利/次の判定に有利/1</code> は自由記述の効果を1ラウンド付与します。</p>
+    <p>全く同じ効果は同じ対象へ重複付与されません。付与中の効果はキャラコマ上にも表示されます。</p>
+
+    <h2>効果管理画面</h2>
+    <p>メニューの「効果管理」から、ラウンド、付与中効果、コマごとのテンプレートを管理できます。テンプレートは「ステータス補正」と「自由記述」を切り替えて登録できます。</p>
+  </section>
+
+  <section *ngIf="selectedTab === 'gm'">
+    <h2>GMモード</h2>
+    <dl>
+      <dt>ルームマスター</dt>
+      <dd>部屋を作成したユーザーが基本的にルームマスターとなり、初期状態でGM権限を持ちます。</dd>
+      <dt>GM権限の付与</dt>
+      <dd>GMモード中のユーザーだけが、接続情報パネルから他ユーザーへGM権限を付与/解除できます。ルームマスターのGM権限は解除できません。</dd>
+      <dt>GM作成キャラ</dt>
+      <dd>GMが作成したキャラ、またはGMがzipから追加したキャラはGM作成キャラになります。非GMは詳細表示やチャットパレット選択ができません。</dd>
+      <dt>再接続</dt>
+      <dd>ネットワークエラー後は前回の接続情報を使って再接続を試みます。同一ブラウザセッション内での復帰を想定しています。</dd>
+    </dl>
+
+    <h2>ステータス秘匿</h2>
+    <dl>
+      <dt>設定方法</dt>
+      <dd>キャラクターシートの <code>ステータス秘匿</code> を有効にします。</dd>
+      <dt>非GMからの見え方</dt>
+      <dd>マウスオーバー時の概要パネル、インベントリ上の簡易ステータス表示では、値が <code>??</code> になります。</dd>
+      <dt>GMからの見え方</dt>
+      <dd>GMモードのユーザーには、秘匿中のステータスも通常通り表示されます。</dd>
+      <dt>リソース操作コマンド</dt>
+      <dd>秘匿中キャラのリソース操作では、非GMには元コマンドの式、参照ステータス、現在値、更新後値、最終合算値が伏せられます。GMには詳細が表示されます。</dd>
+    </dl>
+    <p class="example-note">非GM表示例: <code>:HP ??</code> / <code>キャラ名 HP: ?? -> ??</code></p>
+    <p class="example-note">GM表示例: <code>:HP-5+&#123;防護&#125;</code> / <code>キャラ名 HP: 20 -> 17 (-5+&#123;防護&#125; = -3)</code></p>
+  </section>
+</div>

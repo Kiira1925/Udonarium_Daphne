@@ -1,0 +1,150 @@
+<div class="component">
+  <section class="round-box">
+    <div>
+      <div class="caption">Current Round</div>
+      <div class="round-value">{{round}}</div>
+    </div>
+    <div class="round-actions">
+      <button (click)="incrementRound()">
+        <i class="material-icons">add</i>
+        <span>+1 Round</span>
+      </button>
+      <button class="danger" (click)="resetBattle()">
+        <i class="material-icons">restart_alt</i>
+        <span>Reset</span>
+      </button>
+    </div>
+  </section>
+
+  <section class="template-box">
+    <div class="section-title">バフテンプレート</div>
+    <label class="field full">
+      <span>使用コマ</span>
+      <select [ngModel]="selectedOwnerIdentifier" (ngModelChange)="onOwnerChange($event)">
+        <option *ngFor="let character of characters; trackBy: trackByCharacter" [value]="character.identifier">
+          {{character.name}}
+        </option>
+      </select>
+    </label>
+
+    <div class="template-list" *ngIf="0 < selectedTemplates.length">
+      <div class="template-row" *ngFor="let template of selectedTemplates; trackBy: trackByTemplate">
+        <div class="template-main">
+          <div class="template-name">{{template.name}}</div>
+          <div class="template-status">
+            <span class="effect-kind">{{effectKindLabel(template.kind || 'stat')}}</span>
+            {{formatEffect(template)}} / {{template.durationRounds}}R
+          </div>
+        </div>
+        <button title="選択中の対象へ付与" (click)="applyTemplate(template)">
+          <i class="material-icons">play_arrow</i>
+        </button>
+        <button title="編集" (click)="editTemplate(template)">
+          <i class="material-icons">edit</i>
+        </button>
+        <button class="icon-button danger" title="削除" (click)="removeTemplate(template)">
+          <i class="material-icons">close</i>
+        </button>
+      </div>
+    </div>
+    <div class="empty compact" *ngIf="selectedOwner && selectedTemplates.length < 1">
+      このコマのテンプレートは未登録です
+    </div>
+
+    <div class="template-form">
+      <label class="field">
+        <span>名前</span>
+        <input [(ngModel)]="editingTemplate.name" placeholder="例: 攻撃強化">
+      </label>
+      <label class="field">
+        <span>効果種別</span>
+        <select [(ngModel)]="editingTemplate.kind">
+          <option *ngFor="let kind of effectKinds" [value]="kind">{{effectKindLabel(kind)}}</option>
+        </select>
+      </label>
+
+      <ng-container *ngIf="editingTemplate.kind === 'stat'; else noteEffectForm">
+        <label class="field">
+          <span>対象ステータス</span>
+          <input [(ngModel)]="editingTemplate.statusName" placeholder="例: 攻撃力">
+        </label>
+        <label class="field narrow">
+          <span>演算</span>
+          <select [(ngModel)]="editingTemplate.operator">
+            <option *ngFor="let operator of operators" [value]="operator">{{operator}}</option>
+          </select>
+        </label>
+        <label class="field narrow">
+          <span>数値</span>
+          <input type="number" [(ngModel)]="editingTemplate.amount">
+        </label>
+      </ng-container>
+
+      <ng-template #noteEffectForm>
+        <label class="field full-row">
+          <span>自由記述</span>
+          <textarea [(ngModel)]="editingTemplate.description" rows="3" placeholder="例: 次の判定に有利を得る"></textarea>
+        </label>
+      </ng-template>
+
+      <label class="field narrow">
+        <span>効果時間</span>
+        <input type="number" min="1" [(ngModel)]="editingTemplate.durationRounds">
+      </label>
+      <div class="form-actions">
+        <button [attr.disabled]="canSaveTemplate ? null : ''" (click)="saveTemplate()">
+          <i class="material-icons">save</i>
+          <span>{{editingTemplate.id ? '更新' : '追加'}}</span>
+        </button>
+        <button (click)="newTemplate()">
+          <i class="material-icons">add_circle_outline</i>
+          <span>新規</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="message" *ngIf="message">{{message}}</div>
+    <div class="caption">付与対象: 選択中のコマ {{selectedTargets.length}}体</div>
+  </section>
+
+  <section class="active-effects">
+    <div class="section-title">有効な効果</div>
+    <div class="empty" *ngIf="roomState.effects.length < 1">
+      現在有効なバフ・デバフはありません
+    </div>
+
+    <section class="effect-group" *ngFor="let group of effectGroups; trackBy: trackByGroup">
+      <h3>{{group.character.name}}</h3>
+      <div class="effect-row" *ngFor="let effect of group.effects; trackBy: trackByEffect">
+        <div class="effect-main">
+          <div class="effect-name">{{effect.name}}</div>
+          <div class="effect-status">
+            <span class="effect-kind">{{effectKindLabel(effect.kind || 'stat')}}</span>
+            {{formatEffect(effect)}}
+          </div>
+        </div>
+        <div class="effect-round">{{effect.remainingRounds}}R</div>
+        <button class="icon-button danger" title="削除" (click)="removeEffect(effect)">
+          <i class="material-icons">close</i>
+        </button>
+      </div>
+    </section>
+
+    <section class="effect-group orphan" *ngIf="0 < orphanEffects.length">
+      <h3>対象なし</h3>
+      <div class="effect-row" *ngFor="let effect of orphanEffects; trackBy: trackByEffect">
+        <div class="effect-main">
+          <div class="effect-name">{{effect.name}}</div>
+          <div class="effect-status">
+            <span class="effect-kind">{{effectKindLabel(effect.kind || 'stat')}}</span>
+            {{formatEffect(effect)}}
+          </div>
+        </div>
+        <div class="effect-round">{{effect.remainingRounds}}R</div>
+        <button class="icon-button danger" title="削除" (click)="removeEffect(effect)">
+          <i class="material-icons">close</i>
+        </button>
+      </div>
+    </section>
+  </section>
+</div>
