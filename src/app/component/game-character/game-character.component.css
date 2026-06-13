@@ -326,3 +326,7 @@
 .component:hover .material-icons, .component:active .material-icons {
   display: inline;
 }
+
+.action-done-mark.material-icons {
+  display: inline-block;
+}
