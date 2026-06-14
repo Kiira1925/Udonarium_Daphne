@@ -226,7 +226,7 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
       actions.push({
         name: this.isActionDone ? '未行動に戻す' : '行動完了にする',
         action: () => {
-          RoomState.instance.toggleActionDone(this.gameCharacter);
+          RoomState.instance.setActionDoneForCharacters(this.actionDoneTargets(), !this.isActionDone, true);
         }
       });
     }
@@ -270,6 +270,14 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
     let option: PanelOption = { title: title, left: coordinate.x - 400, top: coordinate.y - 300, width: 800, height: 600 };
     let component = this.panelService.open<GameCharacterSheetComponent>(GameCharacterSheetComponent, option);
     component.tabletopObject = gameObject;
+  }
+
+  private actionDoneTargets(): GameCharacter[] {
+    if (!this.isSelected) return [this.gameCharacter];
+
+    let selectedCharacters = this.selectionService.objects
+      .filter((object): object is GameCharacter => object instanceof GameCharacter);
+    return 1 < selectedCharacters.length ? selectedCharacters : [this.gameCharacter];
   }
 
   private showChatPalette(gameObject: GameCharacter) {

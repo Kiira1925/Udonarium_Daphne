@@ -333,18 +333,35 @@ export class RoomState extends GameObject {
   }
 
   setActionDone(character: GameCharacter, isDone: boolean) {
-    if (!character || this.round <= 0) return;
-    let ids = this.actionDoneCharacterIds.filter(identifier => identifier !== character.identifier);
-    if (isDone) ids.push(character.identifier);
+    this.setActionDoneForCharacters([character], isDone);
+  }
+
+  setActionDoneForCharacters(characters: GameCharacter[], isDone: boolean, announce: boolean = false) {
+    if (this.round <= 0) return;
+
+    let targets = characters.filter(character => character != null);
+    if (targets.length < 1) return;
+
+    let targetIdentifiers = new Set(targets.map(character => character.identifier));
+    let doneBefore = new Set(this.actionDoneCharacterIds);
+    let ids = this.actionDoneCharacterIds.filter(identifier => !targetIdentifiers.has(identifier));
+    if (isDone) {
+      for (let target of targets) {
+        if (!ids.includes(target.identifier)) ids.push(target.identifier);
+      }
+    }
     this.actionDoneCharacterIds = ids;
+
+    if (announce && isDone) {
+      targets
+        .filter(character => !doneBefore.has(character.identifier))
+        .forEach(character => this.sendMainSystemMessage(`${character.name} が行動完了`));
+    }
   }
 
   toggleActionDone(character: GameCharacter): boolean {
     let isDone = !this.isActionDone(character);
-    this.setActionDone(character, isDone);
-    if (isDone) {
-      this.sendMainSystemMessage(`${character.name} が行動完了`);
-    }
+    this.setActionDoneForCharacters([character], isDone, true);
     return isDone;
   }
 
