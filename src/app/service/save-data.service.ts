@@ -9,9 +9,7 @@ import { GameObject } from '@udonarium/core/synchronize-object/game-object';
 import { PromiseQueue } from '@udonarium/core/system/util/promise-queue';
 import { XmlUtil } from '@udonarium/core/system/util/xml-util';
 import { DataSummarySetting } from '@udonarium/data-summary-setting';
-import { GameCharacter } from '@udonarium/game-character';
 import { Room } from '@udonarium/room';
-import { RoomState } from '@udonarium/room-state';
 
 import Beautify from 'vkbeautify';
 
@@ -72,10 +70,6 @@ export class SaveDataService {
 
   private convertToXml(gameObject: GameObject): string {
     let xmlDeclaration = '<?xml version="1.0" encoding="UTF-8"?>';
-    if (gameObject instanceof GameCharacter) {
-      let state = RoomState.instance.exportStateForCharacter(gameObject);
-      return xmlDeclaration + '\n' + Beautify.xml(gameObject.toXmlWithDaphneState(state), 2);
-    }
     return xmlDeclaration + '\n' + Beautify.xml(gameObject.toXml(), 2);
   }
 

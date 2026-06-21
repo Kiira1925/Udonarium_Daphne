@@ -32,28 +32,8 @@ export class GameCharacter extends TabletopObject {
     }
   }
 
-  toXmlWithDaphneState(state: unknown): string {
-    let hadState = this.getAttribute(GameCharacter.exportedStateAttribute).length > 0;
-    let previousState = this.getAttribute(GameCharacter.exportedStateAttribute);
-    this.attributes[GameCharacter.exportedStateAttribute] = JSON.stringify(state ?? {});
-    let xml = this.toXml();
-    if (hadState) {
-      this.attributes[GameCharacter.exportedStateAttribute] = previousState;
-    } else {
-      delete this.attributes[GameCharacter.exportedStateAttribute];
-    }
-    return xml;
-  }
-
-  takeExportedDaphneState<T>(): T | null {
-    let raw = this.getAttribute(GameCharacter.exportedStateAttribute);
-    if (!raw) return null;
+  discardExportedDaphneState() {
     this.removeAttribute(GameCharacter.exportedStateAttribute);
-    try {
-      return JSON.parse(raw) as T;
-    } catch (_error) {
-      return null;
-    }
   }
 
   get chatPalette(): ChatPalette {

@@ -41,11 +41,6 @@ export interface BuffTemplate {
   durationRounds: number;
 }
 
-export interface CharacterEffectState {
-  templates?: Partial<BuffTemplate>[];
-  effects?: Partial<BuffEffect>[];
-}
-
 interface ResourceCommand {
   token: string;
   resourceName: string;
@@ -219,50 +214,28 @@ export class RoomState extends GameObject {
     return this.templatesFor(ownerIdentifier).find(template => this.isSameText(template.name, templateName)) ?? null;
   }
 
-  exportStateForCharacter(character: GameCharacter): CharacterEffectState {
-    return {
-      templates: this.templatesFor(character.identifier).map(template => ({
-        kind: this.effectKind(template),
-        name: template.name,
-        statusName: template.statusName,
-        operator: template.operator,
-        amount: template.amount,
-        description: template.description ?? '',
-        durationRounds: template.durationRounds,
-      })),
-      effects: this.effects
-        .filter(effect => effect.targetIdentifier === character.identifier)
-        .map(effect => ({
-          kind: this.effectKind(effect),
-          name: effect.name,
-          statusName: effect.statusName,
-          operator: effect.operator,
-          amount: effect.amount,
-          description: effect.description ?? '',
-          remainingRounds: effect.remainingRounds,
-        })),
-    };
-  }
+  importTemplatesFromChatPalette(character: GameCharacter): number {
+    let palette = character.chatPalette;
+    if (!palette) return 0;
 
-  importStateForCharacter(character: GameCharacter, state: CharacterEffectState | null): { templates: number, effects: number } {
-    let imported = { templates: 0, effects: 0 };
-    if (!state) return imported;
+    let importedCount = 0;
+    for (let line of palette.getPalette()) {
+      let match = /^\s*\/buff\s+(.+?)\s*$/i.exec(line);
+      if (!match) continue;
 
-    for (let template of state.templates ?? []) {
-      let normalized = this.normalizeTemplate(character.identifier, template);
-      if (!normalized || this.hasSameTemplate(normalized)) continue;
-      this.addTemplate(normalized);
-      imported.templates++;
+      let parsed = this.parseBuffCommand(match[1]);
+      if (!parsed) continue;
+
+      let template: Omit<BuffTemplate, 'id'> = {
+        ...parsed,
+        ownerIdentifier: character.identifier,
+      };
+      if (this.hasSameTemplate(template)) continue;
+
+      this.addTemplate(template);
+      importedCount++;
     }
-
-    for (let effect of state.effects ?? []) {
-      let normalized = this.normalizeEffect(effect);
-      if (!normalized) continue;
-      if (this.addEffect(character, normalized.name, normalized.statusName, normalized.operator, normalized.amount, normalized.remainingRounds, normalized.kind, normalized.description)) {
-        imported.effects++;
-      }
-    }
-    return imported;
+    return importedCount;
   }
 
   applyEffects(target: GameCharacter, element: DataElement): string | null {
@@ -604,45 +577,6 @@ export class RoomState extends GameObject {
   private removeTemplatesByOwner(ownerIdentifier: string) {
     if (!this.buffTemplates.some(template => template.ownerIdentifier === ownerIdentifier)) return;
     this.buffTemplates = this.buffTemplates.filter(template => template.ownerIdentifier !== ownerIdentifier);
-  }
-
-  private normalizeTemplate(ownerIdentifier: string, template: Partial<BuffTemplate>): Omit<BuffTemplate, 'id'> | null {
-    let durationRounds = Math.floor(Number(template.durationRounds));
-    let kind: BuffEffectKind = template.kind === 'note' ? 'note' : 'stat';
-    let normalized: Omit<BuffTemplate, 'id'> = {
-      ownerIdentifier: ownerIdentifier,
-      kind: kind,
-      name: `${template.name ?? ''}`.trim(),
-      statusName: kind === 'note' ? '' : `${template.statusName ?? ''}`.trim(),
-      operator: this.normalizeOperator(template.operator),
-      amount: Number(template.amount),
-      description: `${template.description ?? ''}`.trim(),
-      durationRounds: durationRounds,
-    };
-    if (normalized.name.length < 1 || !Number.isFinite(durationRounds) || durationRounds < 1) return null;
-    if (kind === 'note') return normalized.description.length ? normalized : null;
-    return normalized.statusName.length && Number.isFinite(normalized.amount) ? normalized : null;
-  }
-
-  private normalizeEffect(effect: Partial<BuffEffect>): Omit<BuffEffect, 'id' | 'targetIdentifier' | 'createdRound'> | null {
-    let remainingRounds = Math.floor(Number(effect.remainingRounds));
-    let kind: BuffEffectKind = effect.kind === 'note' ? 'note' : 'stat';
-    let normalized: Omit<BuffEffect, 'id' | 'targetIdentifier' | 'createdRound'> = {
-      kind: kind,
-      name: `${effect.name ?? ''}`.trim(),
-      statusName: kind === 'note' ? '' : `${effect.statusName ?? ''}`.trim(),
-      operator: this.normalizeOperator(effect.operator),
-      amount: Number(effect.amount),
-      description: `${effect.description ?? ''}`.trim(),
-      remainingRounds: remainingRounds,
-    };
-    if (normalized.name.length < 1 || !Number.isFinite(remainingRounds) || remainingRounds < 1) return null;
-    if (kind === 'note') return normalized.description.length ? normalized : null;
-    return normalized.statusName.length && Number.isFinite(normalized.amount) ? normalized : null;
-  }
-
-  private normalizeOperator(operator: BuffOperator | string): BuffOperator {
-    return operator === '-' || operator === '*' ? operator : '+';
   }
 
   private hasSameTemplate(template: Omit<BuffTemplate, 'id'>): boolean {
