@@ -100,20 +100,33 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
     Promise.resolve().then(() => this.panelService.title = '効果管理');
     this.ensureSelectedOwner();
     EventSystem.register(this)
-      .on('UPDATE_GAME_OBJECT', event => {
-        if (event.isSendFromSelf) {
-          this.ensureSelectedOwner();
-          this.changeDetector.markForCheck();
-        }
+      .on(`UPDATE_GAME_OBJECT/aliasName/${GameCharacter.aliasName}`, event => {
+        this.ensureSelectedOwner();
+        this.changeDetector.markForCheck();
+      })
+      .on('UPDATE_GAME_OBJECT/identifier/RoomState', event => {
+        this.changeDetector.markForCheck();
+      })
+      .on('UPDATE_GAME_OBJECT/aliasName/room-effect-state', event => {
+        this.changeDetector.markForCheck();
+      })
+      .on('UPDATE_GAME_OBJECT/aliasName/room-buff-template-state', event => {
+        this.changeDetector.markForCheck();
+      })
+      .on('UPDATE_GAME_OBJECT/aliasName/character-action-state', event => {
+        this.changeDetector.markForCheck();
       })
       .on('DELETE_GAME_OBJECT', event => {
-        if (event.isSendFromSelf) {
-          this.ensureSelectedOwner();
+        if (event.data.aliasName === GameCharacter.aliasName) this.ensureSelectedOwner();
+        if (event.data.aliasName === GameCharacter.aliasName
+          || event.data.aliasName === 'room-effect-state'
+          || event.data.aliasName === 'room-buff-template-state'
+          || event.data.aliasName === 'character-action-state') {
           this.changeDetector.markForCheck();
         }
       })
       .on('UPDATE_SELECTION', event => {
-        if (event.isSendFromSelf) this.changeDetector.markForCheck();
+        this.changeDetector.markForCheck();
       });
   }
 

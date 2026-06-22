@@ -102,6 +102,17 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
       })
       .on('UPDATE_GAME_OBJECT/identifier/RoomState', event => {
         this.changeDetector.markForCheck();
+      })
+      .on('UPDATE_GAME_OBJECT/aliasName/room-effect-state', event => {
+        this.changeDetector.markForCheck();
+      })
+      .on('UPDATE_GAME_OBJECT/aliasName/character-action-state', event => {
+        this.changeDetector.markForCheck();
+      })
+      .on('DELETE_GAME_OBJECT', event => {
+        if (event.data.aliasName === 'room-effect-state' || event.data.aliasName === 'character-action-state') {
+          this.changeDetector.markForCheck();
+        }
       });
     this.movableOption = {
       tabletopObject: this.gameCharacter,

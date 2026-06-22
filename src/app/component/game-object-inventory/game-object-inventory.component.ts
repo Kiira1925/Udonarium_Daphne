@@ -70,6 +70,12 @@ export class GameObjectInventoryComponent implements OnInit, OnDestroy {
       .on('UPDATE_GAME_OBJECT/identifier/RoomState', event => {
         this.changeDetector.markForCheck();
       })
+      .on('UPDATE_GAME_OBJECT/aliasName/character-action-state', event => {
+        this.changeDetector.markForCheck();
+      })
+      .on('UPDATE_GAME_OBJECT/aliasName/room-effect-state', event => {
+        this.changeDetector.markForCheck();
+      })
       .on('OPEN_NETWORK', event => {
         this.inventoryTypes = ['table', 'common', Network.peerId, 'graveyard'];
         if (!this.inventoryTypes.includes(this.selectTab)) {
