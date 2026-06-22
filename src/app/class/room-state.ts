@@ -16,14 +16,23 @@ import { GameCharacter } from './game-character';
 export type BuffOperator = '+' | '-' | '*';
 export type BuffEffectKind = 'stat' | 'note';
 
-export interface BuffEffect {
-  id: string;
-  targetIdentifier: string;
-  kind?: BuffEffectKind;
-  name: string;
+export interface BuffEffectEntry {
+  kind: BuffEffectKind;
   statusName: string;
   operator: BuffOperator;
   amount: number;
+  description?: string;
+}
+
+export interface BuffEffect {
+  id: string;
+  targetIdentifier: string;
+  effects?: BuffEffectEntry[];
+  kind?: BuffEffectKind;
+  name: string;
+  statusName?: string;
+  operator?: BuffOperator;
+  amount?: number;
   description?: string;
   remainingRounds: number;
   createdRound: number;
@@ -32,11 +41,12 @@ export interface BuffEffect {
 export interface BuffTemplate {
   id: string;
   ownerIdentifier: string;
+  effects?: BuffEffectEntry[];
   kind?: BuffEffectKind;
   name: string;
-  statusName: string;
-  operator: BuffOperator;
-  amount: number;
+  statusName?: string;
+  operator?: BuffOperator;
+  amount?: number;
   description?: string;
   durationRounds: number;
 }
@@ -88,8 +98,11 @@ export class RoomState extends GameObject {
     EventSystem.unregister(this);
   }
 
-  addEffect(target: GameCharacter, name: string, statusName: string, operator: BuffOperator, amount: number, remainingRounds: number, kind: BuffEffectKind = 'stat', description: string = ''): BuffEffect | null {
-    let existing = this.effects.find(effect => this.isSameEffectContent(effect, target.identifier, name, statusName, operator, amount, kind, description));
+  addEffect(target: GameCharacter, name: string, entries: BuffEffectEntry[], remainingRounds: number): BuffEffect | null {
+    let normalizedEntries = this.normalizeEffectEntries(entries);
+    if (normalizedEntries.length < 1) return null;
+
+    let existing = this.effects.find(effect => this.isSameEffectContent(effect, target.identifier, name, normalizedEntries));
     if (existing) {
       if (existing.remainingRounds === remainingRounds) return null;
 
@@ -98,15 +111,17 @@ export class RoomState extends GameObject {
       return updated;
     }
 
+    let firstEntry = normalizedEntries[0];
     let newEffect: BuffEffect = {
       id: UUID.generateUuid(),
       targetIdentifier: target.identifier,
-      kind: kind,
+      effects: normalizedEntries,
+      kind: firstEntry.kind,
       name: name,
-      statusName: statusName,
-      operator: operator,
-      amount: amount,
-      description: description,
+      statusName: firstEntry.statusName,
+      operator: firstEntry.operator,
+      amount: firstEntry.amount,
+      description: firstEntry.description ?? '',
       remainingRounds: remainingRounds,
       createdRound: this.round,
     };
@@ -141,7 +156,7 @@ export class RoomState extends GameObject {
     let addedCount = 0;
     let targets = this.selectedCharacters();
     for (let target of targets) {
-      if (this.addEffect(target, template.name, template.statusName, template.operator, template.amount, template.durationRounds, this.effectKind(template), template.description ?? '')) {
+      if (this.addEffect(target, template.name, this.effectEntries(template), template.durationRounds)) {
         addedCount++;
       }
     }
@@ -180,12 +195,19 @@ export class RoomState extends GameObject {
     return removedCount;
   }
 
-  addTemplate(template: Omit<BuffTemplate, 'id'>): BuffTemplate {
+  addTemplate(template: Omit<BuffTemplate, 'id'>): BuffTemplate | null {
+    let entries = this.normalizeEffectEntries(this.effectEntries(template));
+    if (entries.length < 1) return null;
+    let firstEntry = entries[0];
     let created: BuffTemplate = {
       ...template,
       id: UUID.generateUuid(),
-      kind: this.effectKind(template),
-      amount: Number(template.amount),
+      effects: entries,
+      kind: firstEntry.kind,
+      statusName: firstEntry.statusName,
+      operator: firstEntry.operator,
+      amount: firstEntry.amount,
+      description: firstEntry.description ?? '',
       durationRounds: Math.floor(Number(template.durationRounds)),
     };
     this.buffTemplates = this.buffTemplates.concat(created);
@@ -193,10 +215,17 @@ export class RoomState extends GameObject {
   }
 
   updateTemplate(template: BuffTemplate) {
+    let entries = this.normalizeEffectEntries(this.effectEntries(template));
+    if (entries.length < 1) return;
+    let firstEntry = entries[0];
     let updated: BuffTemplate = {
       ...template,
-      kind: this.effectKind(template),
-      amount: Number(template.amount),
+      effects: entries,
+      kind: firstEntry.kind,
+      statusName: firstEntry.statusName,
+      operator: firstEntry.operator,
+      amount: firstEntry.amount,
+      description: firstEntry.description ?? '',
       durationRounds: Math.floor(Number(template.durationRounds)),
     };
     this.buffTemplates = this.buffTemplates.map(item => item.id === updated.id ? updated : item);
@@ -232,8 +261,7 @@ export class RoomState extends GameObject {
       };
       if (this.hasSameTemplate(template)) continue;
 
-      this.addTemplate(template);
-      importedCount++;
+      if (this.addTemplate(template)) importedCount++;
     }
     return importedCount;
   }
@@ -249,12 +277,15 @@ export class RoomState extends GameObject {
     let multipliers = 1;
     let additions = 0;
     for (let effect of this.effectsForTargetIdentifier(targetIdentifier, element.name)) {
-      if (effect.operator === '*') {
-        multipliers *= effect.amount;
-      } else if (effect.operator === '+') {
-        additions += effect.amount;
-      } else if (effect.operator === '-') {
-        additions -= effect.amount;
+      for (let entry of this.effectEntries(effect)) {
+        if (entry.kind !== 'stat' || !this.isSameStatusName(entry.statusName, element.name)) continue;
+        if (entry.operator === '*') {
+          multipliers *= entry.amount;
+        } else if (entry.operator === '+') {
+          additions += entry.amount;
+        } else if (entry.operator === '-') {
+          additions -= entry.amount;
+        }
       }
     }
 
@@ -269,8 +300,10 @@ export class RoomState extends GameObject {
   effectsForTargetIdentifier(targetIdentifier: string, statusName?: string): BuffEffect[] {
     return this.effects.filter(effect =>
       effect.targetIdentifier === targetIdentifier
-      && this.effectKind(effect) === 'stat'
-      && (statusName == null || this.isSameStatusName(effect.statusName, statusName))
+      && this.effectEntries(effect).some(entry =>
+        entry.kind === 'stat'
+        && (statusName == null || this.isSameStatusName(entry.statusName, statusName))
+      )
     );
   }
 
@@ -452,7 +485,7 @@ export class RoomState extends GameObject {
 
     let parsed = this.parseBuffCommand(match[1]);
     if (!parsed) {
-      this.sendSystemMessage(chatMessage, tabIdentifier, 'バフ書式: /buff バフ名/ステータス+数値/効果時間');
+      this.sendSystemMessage(chatMessage, tabIdentifier, 'バフ書式: /buff バフ名/効果1;効果2/効果時間');
       return true;
     }
 
@@ -464,12 +497,12 @@ export class RoomState extends GameObject {
 
     let addedCount = 0;
     for (let target of targets) {
-      if (this.addEffect(target, parsed.name, parsed.statusName, parsed.operator, parsed.amount, parsed.durationRounds, parsed.kind, parsed.description)) {
+      if (this.addEffect(target, parsed.name, this.effectEntries(parsed), parsed.durationRounds)) {
         addedCount++;
       }
     }
 
-    this.sendSystemMessage(chatMessage, tabIdentifier, `${parsed.name}: ${parsed.statusName}${parsed.operator}${parsed.amount} / 残り${parsed.durationRounds}R を${addedCount}体に付与`);
+    this.sendSystemMessage(chatMessage, tabIdentifier, `${parsed.name}: ${this.formatEffectEntries(this.effectEntries(parsed))} / 残り${parsed.durationRounds}R を${addedCount}体に付与`);
     return true;
   }
 
@@ -536,30 +569,42 @@ export class RoomState extends GameObject {
     if (parts.length !== 3) return null;
 
     let [name, effectText, durationText] = parts;
-    let effect = /^(.+?)([+\-*])(-?\d+(?:\.\d+)?)$/.exec(effectText);
     let duration = Number(durationText);
     if (!Number.isFinite(duration) || duration < 1) return null;
 
+    let entries = effectText.split(';')
+      .map(item => this.parseEffectEntry(item.trim()))
+      .filter((entry): entry is BuffEffectEntry => entry != null);
+    if (entries.length < 1 || entries.length !== effectText.split(';').length) return null;
+
+    return {
+      name: name,
+      effects: entries,
+      ...this.legacyEffectFields(entries[0]),
+      durationRounds: Math.floor(duration),
+    };
+  }
+
+  private parseEffectEntry(effectText: string): BuffEffectEntry | null {
+    if (!effectText) return null;
+
+    let effect = /^(.+?)([+\-*])(-?\d+(?:\.\d+)?)$/.exec(effectText);
     if (!effect) {
       return {
         kind: 'note',
-        name: name,
         statusName: '',
         operator: '+',
         amount: 0,
         description: effectText,
-        durationRounds: Math.floor(duration),
       };
     }
 
     return {
       kind: 'stat',
-      name: name,
       statusName: effect[1].trim(),
       operator: effect[2] as BuffOperator,
       amount: Number(effect[3]),
       description: '',
-      durationRounds: Math.floor(duration),
     };
   }
 
@@ -581,14 +626,9 @@ export class RoomState extends GameObject {
 
   private hasSameTemplate(template: Omit<BuffTemplate, 'id'>): boolean {
     return this.templatesFor(template.ownerIdentifier).some(item =>
-      this.effectKind(item) === template.kind
-      && this.isSameText(item.name, template.name)
+      this.isSameText(item.name, template.name)
       && item.durationRounds === template.durationRounds
-      && (template.kind === 'note'
-        ? this.isSameText(item.description ?? '', template.description ?? '')
-        : this.isSameText(item.statusName, template.statusName)
-          && item.operator === template.operator
-          && Number(item.amount) === Number(template.amount))
+      && this.isSameEffectEntries(this.effectEntries(item), this.effectEntries(template))
     );
   }
 
@@ -741,20 +781,81 @@ export class RoomState extends GameObject {
     return StringUtil.equals(effectStatusName.trim(), elementStatusName.trim(), CompareOption.IgnoreCase | CompareOption.IgnoreWidth);
   }
 
-  private effectKind(effect: Pick<BuffEffect | BuffTemplate, 'kind'>): BuffEffectKind {
+  private effectKind(effect: Pick<BuffEffect | BuffTemplate | BuffEffectEntry, 'kind'>): BuffEffectKind {
     return effect.kind === 'note' ? 'note' : 'stat';
   }
 
-  private isSameEffectContent(effect: BuffEffect, targetIdentifier: string, name: string, statusName: string, operator: BuffOperator, amount: number, kind: BuffEffectKind, description: string): boolean {
+  effectEntries(effect: Partial<BuffEffect | BuffTemplate>): BuffEffectEntry[] {
+    if (Array.isArray(effect.effects) && 0 < effect.effects.length) {
+      return this.normalizeEffectEntries(effect.effects);
+    }
+
+    return this.normalizeEffectEntries([{
+      kind: this.effectKind(effect),
+      statusName: effect.statusName ?? '',
+      operator: effect.operator ?? '+',
+      amount: Number(effect.amount ?? 0),
+      description: effect.description ?? '',
+    }]);
+  }
+
+  formatEffectEntries(entries: BuffEffectEntry[]): string {
+    return entries.map(entry => entry.kind === 'note'
+      ? entry.description ?? ''
+      : `${entry.statusName}${entry.operator}${entry.amount}`
+    ).join('; ');
+  }
+
+  private normalizeEffectEntries(entries: BuffEffectEntry[]): BuffEffectEntry[] {
+    return (entries ?? []).map(entry => {
+      let kind = this.effectKind(entry);
+      let operator: BuffOperator = entry.operator === '-' || entry.operator === '*' ? entry.operator : '+';
+      return {
+        kind: kind,
+        statusName: kind === 'note' ? '' : `${entry.statusName ?? ''}`.trim(),
+        operator: operator,
+        amount: kind === 'note' ? 0 : Number(entry.amount),
+        description: kind === 'note' ? `${entry.description ?? ''}`.trim() : '',
+      };
+    }).filter(entry => entry.kind === 'note'
+      ? 0 < (entry.description ?? '').length
+      : 0 < entry.statusName.length && Number.isFinite(entry.amount));
+  }
+
+  private legacyEffectFields(entry: BuffEffectEntry): Pick<BuffTemplate, 'kind' | 'statusName' | 'operator' | 'amount' | 'description'> {
+    return {
+      kind: entry.kind,
+      statusName: entry.statusName,
+      operator: entry.operator,
+      amount: entry.amount,
+      description: entry.description ?? '',
+    };
+  }
+
+  private isSameEffectContent(effect: BuffEffect, targetIdentifier: string, name: string, entries: BuffEffectEntry[]): boolean {
     if (effect.targetIdentifier !== targetIdentifier) return false;
-    if (this.effectKind(effect) !== kind) return false;
     if (!this.isSameText(effect.name, name)) return false;
+    return this.isSameEffectEntries(this.effectEntries(effect), entries);
+  }
 
-    if (kind === 'note') return this.isSameText(effect.description ?? '', description);
+  private isSameEffectEntries(left: BuffEffectEntry[], right: BuffEffectEntry[]): boolean {
+    if (left.length !== right.length) return false;
 
-    return this.isSameText(effect.statusName, statusName)
-      && effect.operator === operator
-      && Number(effect.amount) === Number(amount);
+    let unmatched = right.slice();
+    for (let entry of left) {
+      let index = unmatched.findIndex(other => this.isSameEffectEntry(entry, other));
+      if (index < 0) return false;
+      unmatched.splice(index, 1);
+    }
+    return true;
+  }
+
+  private isSameEffectEntry(left: BuffEffectEntry, right: BuffEffectEntry): boolean {
+    if (left.kind !== right.kind) return false;
+    if (left.kind === 'note') return this.isSameText(left.description ?? '', right.description ?? '');
+    return this.isSameText(left.statusName, right.statusName)
+      && left.operator === right.operator
+      && Number(left.amount) === Number(right.amount);
   }
 
   private isSameText(a: string, b: string): boolean {
