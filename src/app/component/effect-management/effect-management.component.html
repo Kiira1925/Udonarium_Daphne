@@ -20,7 +20,17 @@
   <div class="caption" *ngIf="canManageRound && 0 < round && !roomState.canAdvanceRound()">未行動のテーブル上コマが残っています。</div>
 
   <section class="template-box">
-    <div class="section-title">バフテンプレート</div>
+    <div class="section-heading">
+      <div class="section-title">バフテンプレート</div>
+      <button class="compact-action" *ngIf="!isTemplateEditorOpen" (click)="newTemplate()">
+        <i class="material-icons">add</i>
+        <span>追加</span>
+      </button>
+      <button class="compact-action" *ngIf="isTemplateEditorOpen" (click)="closeTemplateEditor()">
+        <i class="material-icons">expand_less</i>
+        <span>閉じる</span>
+      </button>
+    </div>
     <label class="field full">
       <span>使用コマ</span>
       <select [ngModel]="selectedOwnerIdentifier" (ngModelChange)="onOwnerChange($event)">
@@ -53,7 +63,7 @@
       このコマのテンプレートは未登録です
     </div>
 
-    <div class="template-form">
+    <div class="template-form" *ngIf="isTemplateEditorOpen">
       <label class="field">
         <span>名前</span>
         <input [(ngModel)]="editingTemplate.name" placeholder="例: 攻撃強化">
@@ -115,9 +125,9 @@
           <i class="material-icons">save</i>
           <span>{{editingTemplate.id ? '更新' : '追加'}}</span>
         </button>
-        <button (click)="newTemplate()">
-          <i class="material-icons">add_circle_outline</i>
-          <span>新規</span>
+        <button (click)="closeTemplateEditor()">
+          <i class="material-icons">close</i>
+          <span>キャンセル</span>
         </button>
       </div>
     </div>

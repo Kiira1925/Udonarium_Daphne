@@ -29,6 +29,7 @@ interface TemplateForm {
 export class EffectManagementComponent implements OnInit, OnDestroy {
   selectedOwnerIdentifier: string = '';
   editingTemplate: TemplateForm = this.createTemplateForm('');
+  isTemplateEditorOpen: boolean = false;
   message: string = '';
 
   get roomState(): RoomState { return RoomState.instance; }
@@ -138,6 +139,7 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
     if (!(character instanceof GameCharacter)) return;
     this.selectedOwnerIdentifier = character.identifier;
     this.editingTemplate = this.createTemplateForm(character.identifier);
+    this.isTemplateEditorOpen = false;
     this.message = '';
     this.changeDetector.markForCheck();
   }
@@ -170,11 +172,19 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
   onOwnerChange(ownerIdentifier: string) {
     this.selectedOwnerIdentifier = ownerIdentifier;
     this.editingTemplate = this.createTemplateForm(ownerIdentifier);
+    this.isTemplateEditorOpen = false;
     this.message = '';
   }
 
   newTemplate() {
     this.editingTemplate = this.createTemplateForm(this.selectedOwnerIdentifier);
+    this.isTemplateEditorOpen = true;
+    this.message = '';
+  }
+
+  closeTemplateEditor() {
+    this.editingTemplate = this.createTemplateForm(this.selectedOwnerIdentifier);
+    this.isTemplateEditorOpen = false;
     this.message = '';
   }
 
@@ -186,6 +196,7 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
       effects: this.roomState.effectEntries(template).map(effect => ({ ...effect })),
       durationRounds: template.durationRounds,
     };
+    this.isTemplateEditorOpen = true;
     this.message = '';
   }
 
@@ -225,11 +236,15 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
       this.message = 'テンプレートを追加しました';
     }
     this.editingTemplate = this.createTemplateForm(this.selectedOwnerIdentifier);
+    this.isTemplateEditorOpen = false;
   }
 
   removeTemplate(template: BuffTemplate) {
     this.roomState.removeTemplate(template.id);
-    if (this.editingTemplate.id === template.id) this.newTemplate();
+    if (this.editingTemplate.id === template.id) {
+      this.editingTemplate = this.createTemplateForm(this.selectedOwnerIdentifier);
+      this.isTemplateEditorOpen = false;
+    }
     this.message = 'テンプレートを削除しました';
   }
 
@@ -282,11 +297,13 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
     if (characters.length < 1) {
       this.selectedOwnerIdentifier = '';
       this.editingTemplate = this.createTemplateForm('');
+      this.isTemplateEditorOpen = false;
       return;
     }
     if (!this.selectedOwnerIdentifier || !characters.some(character => character.identifier === this.selectedOwnerIdentifier)) {
       this.selectedOwnerIdentifier = characters[0].identifier;
       this.editingTemplate = this.createTemplateForm(this.selectedOwnerIdentifier);
+      this.isTemplateEditorOpen = false;
     }
   }
 
