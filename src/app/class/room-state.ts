@@ -138,8 +138,11 @@ export class RoomState extends GameObject {
   }
 
   applyTemplateToSelected(template: BuffTemplate): number {
+    return this.applyTemplateToTargets(template, this.selectedCharacters());
+  }
+
+  private applyTemplateToTargets(template: BuffTemplate, targets: GameCharacter[]): number {
     let addedCount = 0;
-    let targets = this.selectedCharacters();
     for (let target of targets) {
       if (this.addEffect(target, template.name, this.effectEntries(template), template.durationRounds)) {
         addedCount++;
@@ -280,6 +283,14 @@ export class RoomState extends GameObject {
   selectedCharacters(): GameCharacter[] {
     let objects = TabletopSelectionService.instance?.objects ?? [];
     return objects.filter((object): object is GameCharacter => object instanceof GameCharacter);
+  }
+
+  private buffCommandTargets(chatMessage: ChatMessage): GameCharacter[] {
+    let targets = this.selectedCharacters();
+    if (0 < targets.length) return targets;
+
+    let source = ObjectStore.instance.get<GameCharacter>(chatMessage.sourceIdentifier);
+    return source instanceof GameCharacter ? [source] : [];
   }
 
   tableCharacters(): GameCharacter[] {
@@ -462,7 +473,7 @@ export class RoomState extends GameObject {
       return true;
     }
 
-    let targets = this.selectedCharacters();
+    let targets = this.buffCommandTargets(chatMessage);
     if (targets.length < 1) {
       this.sendSystemMessage(chatMessage, tabIdentifier, '対象コマが選択されていません');
       return true;
@@ -492,13 +503,13 @@ export class RoomState extends GameObject {
       return true;
     }
 
-    let targets = this.selectedCharacters();
+    let targets = this.buffCommandTargets(chatMessage);
     if (targets.length < 1) {
       this.sendSystemMessage(chatMessage, tabIdentifier, '対象コマが選択されていません');
       return true;
     }
 
-    let addedCount = this.applyTemplateToSelected(template);
+    let addedCount = this.applyTemplateToTargets(template, targets);
     this.sendSystemMessage(chatMessage, tabIdentifier, `${template.name} / 残り${template.durationRounds}R を${addedCount}体に付与`);
     return true;
   }
