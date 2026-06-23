@@ -72,6 +72,12 @@
   padding: 3px 6px;
 }
 
+.template-editor-toggle {
+  display: flex;
+  justify-content: flex-end;
+  margin: 4px 0 6px;
+}
+
 .field {
   display: flex;
   flex-direction: column;
