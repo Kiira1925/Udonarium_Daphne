@@ -58,6 +58,20 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
     return this.roomState.selectedCharacters();
   }
 
+  get templateApplyTargets(): GameCharacter[] {
+    let targets = this.selectedTargets;
+    if (0 < targets.length) return targets;
+
+    return this.selectedOwner ? [this.selectedOwner] : [];
+  }
+
+  get templateApplyTargetLabel(): string {
+    let selectedCount = this.selectedTargets.length;
+    if (0 < selectedCount) return `選択中のコマ ${selectedCount}体`;
+
+    return this.selectedOwner ? `使用コマ ${this.selectedOwner.name}` : '対象なし';
+  }
+
   get effectGroups(): EffectGroup[] {
     let groups: EffectGroup[] = [];
     for (let effect of this.roomState.effects) {
@@ -249,10 +263,10 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
   }
 
   applyTemplate(template: BuffTemplate) {
-    let count = this.roomState.applyTemplateToSelected(template);
+    let count = this.roomState.applyTemplateToCharacters(template, this.templateApplyTargets);
     this.message = count
       ? `${template.name} を${count}体に付与しました`
-      : '対象コマが選択されていません';
+      : '対象コマがありません';
   }
 
   addTemplateEffect() {

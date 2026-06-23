@@ -138,10 +138,10 @@ export class RoomState extends GameObject {
   }
 
   applyTemplateToSelected(template: BuffTemplate): number {
-    return this.applyTemplateToTargets(template, this.selectedCharacters());
+    return this.applyTemplateToCharacters(template, this.selectedCharacters());
   }
 
-  private applyTemplateToTargets(template: BuffTemplate, targets: GameCharacter[]): number {
+  applyTemplateToCharacters(template: BuffTemplate, targets: GameCharacter[]): number {
     let addedCount = 0;
     for (let target of targets) {
       if (this.addEffect(target, template.name, this.effectEntries(template), template.durationRounds)) {
@@ -509,7 +509,7 @@ export class RoomState extends GameObject {
       return true;
     }
 
-    let addedCount = this.applyTemplateToTargets(template, targets);
+    let addedCount = this.applyTemplateToCharacters(template, targets);
     this.sendSystemMessage(chatMessage, tabIdentifier, `${template.name} / 残り${template.durationRounds}R を${addedCount}体に付与`);
     return true;
   }
