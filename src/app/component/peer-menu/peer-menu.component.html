@@ -53,6 +53,7 @@
     <span *ngIf="!peer.isOpen">[接続中]</span>
     <span>参加者: {{findUserId(peer.peerId)}} [{{findPeerName(peer.peerId)}}]</span>
     <span *ngIf="isPeerRoomMaster(peer.peerId)"> / ルーム作成者</span>
+    <span class="sync-warning" *ngIf="isPeerSyncUnhealthy(peer)"> / 同期遅延の可能性</span>
     <div class="session-info">
       <span>接続状態:
         Grade:{{stringFromSessionGrade(peer.session.grade)}} ({{peer.session.description}})

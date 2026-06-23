@@ -11,7 +11,7 @@ import { GameCharacter } from '@udonarium/game-character';
 import { GameTable } from '@udonarium/game-table';
 import { GameTableMask } from '@udonarium/game-table-mask';
 import { PeerCursor } from '@udonarium/peer-cursor';
-import { CharacterEffectState, RoomState } from '@udonarium/room-state';
+import { RoomState } from '@udonarium/room-state';
 import { PresetSound, SoundEffect } from '@udonarium/sound-effect';
 import { TableSelecter } from '@udonarium/table-selecter';
 import { TabletopObject } from '@udonarium/tabletop-object';
@@ -96,7 +96,10 @@ export class TabletopService {
         // todo:立体地形の上にドロップした時の挙動
         let gameObject = ObjectSerializer.instance.parseXml(xmlElement);
         if (gameObject instanceof GameCharacter) {
-          RoomState.instance.importStateForCharacter(gameObject, gameObject.takeExportedDaphneState<CharacterEffectState>());
+          gameObject.discardExportedDaphneState();
+          if (event.data.fromArchive) {
+            RoomState.instance.importTemplatesFromChatPalette(gameObject);
+          }
           if (event.data.fromArchive && RoomState.instance.isGM()) {
             gameObject.markAsCreatedBy(Network.peer.userId, true);
           }

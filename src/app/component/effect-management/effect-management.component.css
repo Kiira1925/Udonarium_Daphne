@@ -56,6 +56,22 @@
   margin: 6px 0 4px;
 }
 
+.section-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.section-heading .section-title {
+  margin-bottom: 0;
+}
+
+.compact-action {
+  font-size: 11px;
+  padding: 3px 6px;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -158,6 +174,38 @@
 
 .template-form .full-row {
   grid-column: 1 / -1;
+}
+
+.effect-editor {
+  background: rgba(255, 255, 255, 0.35);
+  border: 1px solid #999;
+  border-radius: 4px;
+  padding: 5px;
+}
+
+.effect-editor-header {
+  align-items: center;
+  color: #555;
+  display: flex;
+  font-size: 11px;
+  font-weight: bold;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.effect-editor-fields {
+  display: grid;
+  gap: 5px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 66px 76px;
+}
+
+.effect-editor-fields .full-row {
+  grid-column: 2 / -1;
+}
+
+.effect-add {
+  display: flex;
+  justify-content: flex-start;
 }
 
 .form-actions {

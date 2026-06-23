@@ -102,6 +102,17 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
       })
       .on('UPDATE_GAME_OBJECT/identifier/RoomState', event => {
         this.changeDetector.markForCheck();
+      })
+      .on('UPDATE_GAME_OBJECT/aliasName/room-effect-state', event => {
+        this.changeDetector.markForCheck();
+      })
+      .on('UPDATE_GAME_OBJECT/aliasName/character-action-state', event => {
+        this.changeDetector.markForCheck();
+      })
+      .on('DELETE_GAME_OBJECT', event => {
+        if (event.data.aliasName === 'room-effect-state' || event.data.aliasName === 'character-action-state') {
+          this.changeDetector.markForCheck();
+        }
       });
     this.movableOption = {
       tabletopObject: this.gameCharacter,
@@ -226,7 +237,7 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
       actions.push({
         name: this.isActionDone ? '未行動に戻す' : '行動完了にする',
         action: () => {
-          RoomState.instance.toggleActionDone(this.gameCharacter);
+          RoomState.instance.setActionDoneForCharacters(this.actionDoneTargets(), !this.isActionDone, true);
         }
       });
     }
@@ -272,6 +283,14 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
     component.tabletopObject = gameObject;
   }
 
+  private actionDoneTargets(): GameCharacter[] {
+    if (!this.isSelected) return [this.gameCharacter];
+
+    let selectedCharacters = this.selectionService.objects
+      .filter((object): object is GameCharacter => object instanceof GameCharacter);
+    return 1 < selectedCharacters.length ? selectedCharacters : [this.gameCharacter];
+  }
+
   private showChatPalette(gameObject: GameCharacter) {
     let coordinate = this.pointerDeviceService.pointers[0];
     let option: PanelOption = { left: coordinate.x - 250, top: coordinate.y - 175, width: 615, height: 350 };
@@ -291,9 +310,7 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
   }
 
   formatEffectBadgeDetail(effect: BuffEffect): string {
-    let content = effect.kind === 'note'
-      ? (effect.description ?? '')
-      : `${effect.statusName}${effect.operator}${effect.amount}`;
+    let content = RoomState.instance.formatEffectEntries(RoomState.instance.effectEntries(effect));
     return content.length < 1 ? `${effect.name} ${effect.remainingRounds}R` : `${effect.name}: ${content} / ${effect.remainingRounds}R`;
   }
 }

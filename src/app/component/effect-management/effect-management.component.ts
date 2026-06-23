@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 
-import { BuffEffect, BuffEffectKind, BuffOperator, BuffTemplate, RoomState } from '@udonarium/room-state';
+import { BuffEffect, BuffEffectEntry, BuffEffectKind, BuffOperator, BuffTemplate, RoomState } from '@udonarium/room-state';
 import { ObjectStore } from '@udonarium/core/synchronize-object/object-store';
 import { EventSystem } from '@udonarium/core/system';
 import { GameCharacter } from '@udonarium/game-character';
@@ -15,12 +15,8 @@ interface EffectGroup {
 interface TemplateForm {
   id: string;
   ownerIdentifier: string;
-  kind: BuffEffectKind;
   name: string;
-  statusName: string;
-  operator: BuffOperator;
-  amount: number;
-  description: string;
+  effects: BuffEffectEntry[];
   durationRounds: number;
 }
 
@@ -33,6 +29,7 @@ interface TemplateForm {
 export class EffectManagementComponent implements OnInit, OnDestroy {
   selectedOwnerIdentifier: string = '';
   editingTemplate: TemplateForm = this.createTemplateForm('');
+  isTemplateEditorOpen: boolean = false;
   message: string = '';
 
   get roomState(): RoomState { return RoomState.instance; }
@@ -89,10 +86,10 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
       return false;
     }
 
-    if (this.editingTemplate.kind === 'note') return 0 < this.editingTemplate.description.trim().length;
-
-    return 0 < this.editingTemplate.statusName.trim().length
-      && Number.isFinite(Number(this.editingTemplate.amount));
+    return 0 < this.editingTemplate.effects.length
+      && this.editingTemplate.effects.every(effect => effect.kind === 'note'
+        ? 0 < (effect.description ?? '').trim().length
+        : 0 < effect.statusName.trim().length && Number.isFinite(Number(effect.amount)));
   }
 
   constructor(
@@ -104,20 +101,33 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
     Promise.resolve().then(() => this.panelService.title = '効果管理');
     this.ensureSelectedOwner();
     EventSystem.register(this)
-      .on('UPDATE_GAME_OBJECT', event => {
-        if (event.isSendFromSelf) {
-          this.ensureSelectedOwner();
-          this.changeDetector.markForCheck();
-        }
+      .on(`UPDATE_GAME_OBJECT/aliasName/${GameCharacter.aliasName}`, event => {
+        this.ensureSelectedOwner();
+        this.changeDetector.markForCheck();
+      })
+      .on('UPDATE_GAME_OBJECT/identifier/RoomState', event => {
+        this.changeDetector.markForCheck();
+      })
+      .on('UPDATE_GAME_OBJECT/aliasName/room-effect-state', event => {
+        this.changeDetector.markForCheck();
+      })
+      .on('UPDATE_GAME_OBJECT/aliasName/room-buff-template-state', event => {
+        this.changeDetector.markForCheck();
+      })
+      .on('UPDATE_GAME_OBJECT/aliasName/character-action-state', event => {
+        this.changeDetector.markForCheck();
       })
       .on('DELETE_GAME_OBJECT', event => {
-        if (event.isSendFromSelf) {
-          this.ensureSelectedOwner();
+        if (event.data.aliasName === GameCharacter.aliasName) this.ensureSelectedOwner();
+        if (event.data.aliasName === GameCharacter.aliasName
+          || event.data.aliasName === 'room-effect-state'
+          || event.data.aliasName === 'room-buff-template-state'
+          || event.data.aliasName === 'character-action-state') {
           this.changeDetector.markForCheck();
         }
       })
       .on('UPDATE_SELECTION', event => {
-        if (event.isSendFromSelf) this.changeDetector.markForCheck();
+        this.changeDetector.markForCheck();
       });
   }
 
@@ -129,6 +139,7 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
     if (!(character instanceof GameCharacter)) return;
     this.selectedOwnerIdentifier = character.identifier;
     this.editingTemplate = this.createTemplateForm(character.identifier);
+    this.isTemplateEditorOpen = false;
     this.message = '';
     this.changeDetector.markForCheck();
   }
@@ -161,11 +172,19 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
   onOwnerChange(ownerIdentifier: string) {
     this.selectedOwnerIdentifier = ownerIdentifier;
     this.editingTemplate = this.createTemplateForm(ownerIdentifier);
+    this.isTemplateEditorOpen = false;
     this.message = '';
   }
 
   newTemplate() {
     this.editingTemplate = this.createTemplateForm(this.selectedOwnerIdentifier);
+    this.isTemplateEditorOpen = true;
+    this.message = '';
+  }
+
+  closeTemplateEditor() {
+    this.editingTemplate = this.createTemplateForm(this.selectedOwnerIdentifier);
+    this.isTemplateEditorOpen = false;
     this.message = '';
   }
 
@@ -173,14 +192,11 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
     this.editingTemplate = {
       id: template.id,
       ownerIdentifier: template.ownerIdentifier,
-      kind: template.kind === 'note' ? 'note' : 'stat',
       name: template.name,
-      statusName: template.statusName,
-      operator: template.operator,
-      amount: template.amount,
-      description: template.description ?? '',
+      effects: this.roomState.effectEntries(template).map(effect => ({ ...effect })),
       durationRounds: template.durationRounds,
     };
+    this.isTemplateEditorOpen = true;
     this.message = '';
   }
 
@@ -193,40 +209,42 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
     let template: TemplateForm = {
       ...this.editingTemplate,
       name: this.editingTemplate.name.trim(),
-      statusName: this.editingTemplate.statusName.trim(),
-      description: this.editingTemplate.description.trim(),
-      amount: Number(this.editingTemplate.amount),
+      effects: this.editingTemplate.effects.map(effect => ({
+        kind: effect.kind,
+        statusName: effect.kind === 'stat' ? effect.statusName.trim() : '',
+        operator: effect.kind === 'stat' ? effect.operator : '+',
+        amount: effect.kind === 'stat' ? Number(effect.amount) : 0,
+        description: effect.kind === 'note' ? (effect.description ?? '').trim() : '',
+      })),
       durationRounds: Math.floor(Number(this.editingTemplate.durationRounds)),
     };
 
-    if (template.kind === 'note') {
-      template.statusName = '';
-      template.operator = '+';
-      template.amount = 0;
-    }
-
     if (template.id) {
-      this.roomState.updateTemplate(template);
+      this.roomState.updateTemplate({
+        ...template,
+        ...this.legacyEffectFields(template.effects[0]),
+      });
       this.message = 'テンプレートを更新しました';
     } else {
       this.roomState.addTemplate({
         ownerIdentifier: template.ownerIdentifier,
-        kind: template.kind,
         name: template.name,
-        statusName: template.statusName,
-        operator: template.operator,
-        amount: template.amount,
-        description: template.description,
+        effects: template.effects,
+        ...this.legacyEffectFields(template.effects[0]),
         durationRounds: template.durationRounds,
       });
       this.message = 'テンプレートを追加しました';
     }
     this.editingTemplate = this.createTemplateForm(this.selectedOwnerIdentifier);
+    this.isTemplateEditorOpen = false;
   }
 
   removeTemplate(template: BuffTemplate) {
     this.roomState.removeTemplate(template.id);
-    if (this.editingTemplate.id === template.id) this.newTemplate();
+    if (this.editingTemplate.id === template.id) {
+      this.editingTemplate = this.createTemplateForm(this.selectedOwnerIdentifier);
+      this.isTemplateEditorOpen = false;
+    }
     this.message = 'テンプレートを削除しました';
   }
 
@@ -237,11 +255,21 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
       : '対象コマが選択されていません';
   }
 
-  formatEffect(effect: BuffEffect | BuffTemplate): string {
-    if (effect.kind === 'note') return effect.description ?? '';
+  addTemplateEffect() {
+    this.editingTemplate.effects.push(this.createEffectForm());
+  }
 
-    let sign = effect.operator === '*' ? 'x' : effect.operator;
-    return `${effect.statusName} ${sign}${effect.amount}`;
+  removeTemplateEffect(index: number) {
+    if (this.editingTemplate.effects.length <= 1) return;
+    this.editingTemplate.effects.splice(index, 1);
+  }
+
+  formatEffect(effect: BuffEffect | BuffTemplate): string {
+    return this.roomState.effectEntries(effect).map(entry => {
+      if (entry.kind === 'note') return entry.description ?? '';
+      let sign = entry.operator === '*' ? 'x' : entry.operator;
+      return `${entry.statusName} ${sign}${entry.amount}`;
+    }).join(' / ');
   }
 
   effectKindLabel(kind: BuffEffectKind): string {
@@ -269,11 +297,13 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
     if (characters.length < 1) {
       this.selectedOwnerIdentifier = '';
       this.editingTemplate = this.createTemplateForm('');
+      this.isTemplateEditorOpen = false;
       return;
     }
     if (!this.selectedOwnerIdentifier || !characters.some(character => character.identifier === this.selectedOwnerIdentifier)) {
       this.selectedOwnerIdentifier = characters[0].identifier;
       this.editingTemplate = this.createTemplateForm(this.selectedOwnerIdentifier);
+      this.isTemplateEditorOpen = false;
     }
   }
 
@@ -281,13 +311,29 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
     return {
       id: '',
       ownerIdentifier: ownerIdentifier,
-      kind: 'stat',
       name: '',
+      effects: [this.createEffectForm()],
+      durationRounds: 1,
+    };
+  }
+
+  private createEffectForm(): BuffEffectEntry {
+    return {
+      kind: 'stat',
       statusName: '',
       operator: '+',
       amount: 1,
       description: '',
-      durationRounds: 1,
+    };
+  }
+
+  private legacyEffectFields(effect: BuffEffectEntry) {
+    return {
+      kind: effect.kind,
+      statusName: effect.statusName,
+      operator: effect.operator,
+      amount: effect.amount,
+      description: effect.description ?? '',
     };
   }
 }

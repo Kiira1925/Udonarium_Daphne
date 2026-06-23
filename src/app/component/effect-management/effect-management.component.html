@@ -20,7 +20,17 @@
   <div class="caption" *ngIf="canManageRound && 0 < round && !roomState.canAdvanceRound()">未行動のテーブル上コマが残っています。</div>
 
   <section class="template-box">
-    <div class="section-title">バフテンプレート</div>
+    <div class="section-heading">
+      <div class="section-title">バフテンプレート</div>
+      <button class="compact-action" *ngIf="!isTemplateEditorOpen" (click)="newTemplate()">
+        <i class="material-icons">add</i>
+        <span>追加</span>
+      </button>
+      <button class="compact-action" *ngIf="isTemplateEditorOpen" (click)="closeTemplateEditor()">
+        <i class="material-icons">expand_less</i>
+        <span>閉じる</span>
+      </button>
+    </div>
     <label class="field full">
       <span>使用コマ</span>
       <select [ngModel]="selectedOwnerIdentifier" (ngModelChange)="onOwnerChange($event)">
@@ -35,7 +45,6 @@
         <div class="template-main">
           <div class="template-name">{{template.name}}</div>
           <div class="template-status">
-            <span class="effect-kind">{{effectKindLabel(template.kind || 'stat')}}</span>
             {{formatEffect(template)}} / {{template.durationRounds}}R
           </div>
         </div>
@@ -54,41 +63,58 @@
       このコマのテンプレートは未登録です
     </div>
 
-    <div class="template-form">
+    <div class="template-form" *ngIf="isTemplateEditorOpen">
       <label class="field">
         <span>名前</span>
         <input [(ngModel)]="editingTemplate.name" placeholder="例: 攻撃強化">
       </label>
-      <label class="field">
-        <span>効果種別</span>
-        <select [(ngModel)]="editingTemplate.kind">
-          <option *ngFor="let kind of effectKinds" [value]="kind">{{effectKindLabel(kind)}}</option>
-        </select>
-      </label>
+      <div class="effect-editor full-row" *ngFor="let effect of editingTemplate.effects; let index = index">
+        <div class="effect-editor-header">
+          <span>効果 {{index + 1}}</span>
+          <button class="icon-button danger" title="この効果を削除" [disabled]="editingTemplate.effects.length <= 1" (click)="removeTemplateEffect(index)">
+            <i class="material-icons">close</i>
+          </button>
+        </div>
+        <div class="effect-editor-fields">
+          <label class="field">
+            <span>効果種別</span>
+            <select [(ngModel)]="effect.kind">
+              <option *ngFor="let kind of effectKinds" [value]="kind">{{effectKindLabel(kind)}}</option>
+            </select>
+          </label>
 
-      <ng-container *ngIf="editingTemplate.kind === 'stat'; else noteEffectForm">
-        <label class="field">
-          <span>対象ステータス</span>
-          <input [(ngModel)]="editingTemplate.statusName" placeholder="例: 攻撃力">
-        </label>
-        <label class="field narrow">
-          <span>演算</span>
-          <select [(ngModel)]="editingTemplate.operator">
-            <option *ngFor="let operator of operators" [value]="operator">{{operator}}</option>
-          </select>
-        </label>
-        <label class="field narrow">
-          <span>数値</span>
-          <input type="number" [(ngModel)]="editingTemplate.amount">
-        </label>
-      </ng-container>
+          <ng-container *ngIf="effect.kind === 'stat'; else noteEffectForm">
+            <label class="field">
+              <span>対象ステータス</span>
+              <input [(ngModel)]="effect.statusName" placeholder="例: 攻撃力">
+            </label>
+            <label class="field narrow">
+              <span>演算</span>
+              <select [(ngModel)]="effect.operator">
+                <option *ngFor="let operator of operators" [value]="operator">{{operator}}</option>
+              </select>
+            </label>
+            <label class="field narrow">
+              <span>数値</span>
+              <input type="number" [(ngModel)]="effect.amount">
+            </label>
+          </ng-container>
 
-      <ng-template #noteEffectForm>
-        <label class="field full-row">
-          <span>自由記述</span>
-          <textarea [(ngModel)]="editingTemplate.description" rows="3" placeholder="例: 次の判定に有利を得る"></textarea>
-        </label>
-      </ng-template>
+          <ng-template #noteEffectForm>
+            <label class="field full-row">
+              <span>自由記述</span>
+              <textarea [(ngModel)]="effect.description" rows="2" placeholder="例: 次の判定に有利を得る"></textarea>
+            </label>
+          </ng-template>
+        </div>
+      </div>
+
+      <div class="effect-add full-row">
+        <button (click)="addTemplateEffect()">
+          <i class="material-icons">add</i>
+          <span>効果を追加</span>
+        </button>
+      </div>
 
       <label class="field narrow">
         <span>効果時間</span>
@@ -99,9 +125,9 @@
           <i class="material-icons">save</i>
           <span>{{editingTemplate.id ? '更新' : '追加'}}</span>
         </button>
-        <button (click)="newTemplate()">
-          <i class="material-icons">add_circle_outline</i>
-          <span>新規</span>
+        <button (click)="closeTemplateEditor()">
+          <i class="material-icons">close</i>
+          <span>キャンセル</span>
         </button>
       </div>
     </div>
@@ -122,7 +148,6 @@
         <div class="effect-main">
           <div class="effect-name">{{effect.name}}</div>
           <div class="effect-status">
-            <span class="effect-kind">{{effectKindLabel(effect.kind || 'stat')}}</span>
             {{formatEffect(effect)}}
           </div>
         </div>
@@ -139,7 +164,6 @@
         <div class="effect-main">
           <div class="effect-name">{{effect.name}}</div>
           <div class="effect-status">
-            <span class="effect-kind">{{effectKindLabel(effect.kind || 'stat')}}</span>
             {{formatEffect(effect)}}
           </div>
         </div>

@@ -18,3 +18,17 @@
   padding: 2px 0;
   background-color: rgba(247, 247, 247, 0.6);
 }
+
+.sk-cube-grid.is-warning {
+  background-color: rgba(255, 239, 196, 0.95);
+  color: #6c4500;
+}
+
+.sk-cube-grid.is-warning .sk-cube {
+  background-color: #c47a00;
+}
+
+.sk-cube-grid.is-warning .sk-title {
+  background-color: rgba(255, 239, 196, 0.95);
+  font-weight: bold;
+}

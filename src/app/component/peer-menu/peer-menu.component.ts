@@ -2,7 +2,7 @@ import { AfterViewInit, Component, NgZone, OnDestroy, OnInit } from '@angular/co
 
 import { ObjectStore } from '@udonarium/core/synchronize-object/object-store';
 import { EventSystem, Network } from '@udonarium/core/system';
-import { PeerContext } from '@udonarium/core/system/network/peer-context';
+import { IPeerContext, PeerContext } from '@udonarium/core/system/network/peer-context';
 import { PeerSessionGrade } from '@udonarium/core/system/network/peer-session-state';
 import { PeerCursor } from '@udonarium/peer-cursor';
 import { RoomState } from '@udonarium/room-state';
@@ -111,5 +111,11 @@ export class PeerMenuComponent implements OnInit, OnDestroy, AfterViewInit {
   isPeerRoomMaster(peerId: string): boolean {
     const userId = this.findUserId(peerId);
     return this.roomState.isRoomMaster(userId);
+  }
+
+  isPeerSyncUnhealthy(peer: IPeerContext): boolean {
+    return !peer.isOpen
+      || 1500 < peer.session.ping
+      || (0 < peer.session.health && peer.session.health < 0.8);
   }
 }

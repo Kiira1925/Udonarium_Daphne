@@ -46,6 +46,11 @@
   color: #165c2f;
 }
 
+.sync-warning {
+  color: #9a5a00;
+  font-weight: bold;
+}
+
 .session-info {
   visibility: hidden;
   pointer-events: none;

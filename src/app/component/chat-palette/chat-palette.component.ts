@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ChatPalette } from '@udonarium/chat-palette';
 import { ChatTab } from '@udonarium/chat-tab';
 import { ObjectStore } from '@udonarium/core/synchronize-object/object-store';
@@ -57,7 +57,8 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
   constructor(
     public chatMessageService: ChatMessageService,
     private panelService: PanelService,
-    private selectionService: TabletopSelectionService
+    private selectionService: TabletopSelectionService,
+    private changeDetector: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
@@ -75,6 +76,13 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
       })
       .on('UPDATE_GAME_OBJECT/identifier/RoomState', event => {
         this.closeIfForbidden();
+        this.changeDetector.markForCheck();
+      })
+      .on('UPDATE_GAME_OBJECT/aliasName/character-action-state', event => {
+        this.changeDetector.markForCheck();
+      })
+      .on('DELETE_GAME_OBJECT', event => {
+        if (event.data.aliasName === 'character-action-state') this.changeDetector.markForCheck();
       });
     this.closeIfForbidden();
   }
