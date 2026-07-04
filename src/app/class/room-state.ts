@@ -30,6 +30,10 @@ export class RoomState extends GameObject {
   private static readonly identifier = 'RoomState';
   private static readonly gmModeStorageKey = 'udonarium-daphne-gm-mode';
 
+  constructor(identifier: string = RoomState.identifier) {
+    super(identifier);
+  }
+
   static get instance(): RoomState {
     let state = ObjectStore.instance.get<RoomState>(RoomState.identifier);
     if (!state) {
@@ -83,6 +87,17 @@ export class RoomState extends GameObject {
     EventSystem.unregister(this);
   }
 
+  override initialize() {
+    let existing = ObjectStore.instance.get<RoomState>(RoomState.identifier);
+    if (existing && existing !== this) {
+      existing.apply(this.toContext());
+      existing.update();
+      return;
+    }
+
+    super.initialize();
+  }
+
   override apply(context: ObjectContext) {
     let syncData = { ...context.syncData };
     let legacyEffects = Array.isArray(syncData['effects']) ? syncData['effects'] as BuffEffect[] : [];
@@ -99,6 +114,18 @@ export class RoomState extends GameObject {
     if (legacyEffects.length || legacyTemplates.length || legacyActionDoneIds.length) {
       queueMicrotask(() => this.migrateLegacyState(legacyEffects, legacyTemplates, legacyActionDoneIds));
     }
+  }
+
+  resetForRoomLoad() {
+    let context = this.toContext();
+    context.syncData = {
+      ...context.syncData,
+      round: 0,
+      battleSequence: 1,
+      roomMasterUserId: '',
+    };
+    this.apply(context);
+    this.update();
   }
 
   addEffect(target: GameCharacter, name: string, entries: BuffEffectEntry[], remainingRounds: number): BuffEffect | null {
