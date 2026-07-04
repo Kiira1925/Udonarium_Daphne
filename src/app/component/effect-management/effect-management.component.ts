@@ -284,6 +284,20 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
       : '対象コマがありません';
   }
 
+  async copyAllTemplateCommands() {
+    let commands = this.selectedTemplates.map(template => this.templateCommand(template));
+    if (commands.length < 1) {
+      this.message = 'コピーできるテンプレートがありません';
+      return;
+    }
+
+    let isCopied = await this.copyTextToClipboard(commands.join('\n'));
+    this.message = isCopied
+      ? `${commands.length}件のテンプレートをチャットコマンド形式でコピーしました`
+      : 'クリップボードへのコピーに失敗しました';
+    this.requestViewUpdate();
+  }
+
   addTemplateEffect() {
     this.editingTemplate.effects.push(this.createEffectForm());
   }
@@ -299,6 +313,40 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
       let sign = entry.operator === '*' ? 'x' : entry.operator;
       return `${entry.statusName} ${sign}${entry.amount}`;
     }).join(' / ');
+  }
+
+  private templateCommand(template: BuffTemplate): string {
+    let effects = this.roomState.effectEntries(template)
+      .map(entry => this.effectEntryCommand(entry))
+      .join(';');
+    return `/buff ${template.name}/${effects}/${template.durationRounds}`;
+  }
+
+  private effectEntryCommand(entry: BuffEffectEntry): string {
+    if (entry.kind === 'note') return entry.description ?? '';
+    return `${entry.statusName}${entry.operator}${entry.amount}`;
+  }
+
+  private async copyTextToClipboard(text: string): Promise<boolean> {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (_error) {
+      // Fall through to the textarea fallback below.
+    }
+
+    let textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    let isCopied = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return isCopied;
   }
 
   effectKindLabel(kind: BuffEffectKind): string {

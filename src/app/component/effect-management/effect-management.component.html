@@ -54,6 +54,10 @@
     </div>
 
     <div class="template-editor-toggle">
+      <button class="compact-action" [disabled]="selectedTemplates.length < 1" (click)="copyAllTemplateCommands()">
+        <i class="material-icons">content_copy</i>
+        <span>全テンプレートをコピー</span>
+      </button>
       <button class="compact-action" *ngIf="!isTemplateEditorOpen" (click)="newTemplate()">
         <i class="material-icons">add</i>
         <span>追加</span>

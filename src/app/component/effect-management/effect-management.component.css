@@ -74,6 +74,7 @@
 
 .template-editor-toggle {
   display: flex;
+  gap: 4px;
   justify-content: flex-end;
   margin: 4px 0 6px;
 }
