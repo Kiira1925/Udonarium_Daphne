@@ -161,7 +161,7 @@ export class RoomState extends GameObject {
   }
 
   canAccessGMCharacter(character: GameCharacter): boolean {
-    return !character.isGMCreated || this.isGM();
+    return true;
   }
 
   applyTemplateToSelected(template: BuffTemplate): number {
