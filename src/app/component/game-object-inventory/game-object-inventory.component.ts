@@ -69,6 +69,11 @@ export class GameObjectInventoryComponent implements OnInit, OnDestroy {
       .on('UPDATE_INVENTORY', event => {
         if (event.isSendFromSelf) this.requestViewUpdate();
       })
+      .on('UPDATE_GAME_OBJECT', event => {
+        if (this.shouldRefreshForSharedState(event.data.aliasName, event.data.identifier)) {
+          this.requestViewUpdate();
+        }
+      })
       .on('UPDATE_GAME_OBJECT/identifier/RoomState', event => {
         this.requestViewUpdate();
       })
@@ -102,6 +107,12 @@ export class GameObjectInventoryComponent implements OnInit, OnDestroy {
       this.isViewUpdateQueued = false;
       if (!this.isDestroyed) this.changeDetector.detectChanges();
     });
+  }
+
+  private shouldRefreshForSharedState(aliasName: string, identifier: string): boolean {
+    return identifier === 'RoomState'
+      || aliasName === 'room-effect-state'
+      || aliasName === 'character-action-state';
   }
 
   getTabTitle(inventoryType: string) {

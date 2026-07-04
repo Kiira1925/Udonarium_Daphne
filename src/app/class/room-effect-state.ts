@@ -38,9 +38,15 @@ export class RoomEffectState extends GameObject {
   }
 
   refresh(createdRound: number, durationRounds: number) {
-    this.active = true;
-    this.createdRound = createdRound;
-    this.expiresAtRound = createdRound + durationRounds;
+    let context = this.toContext();
+    context.syncData = {
+      ...context.syncData,
+      active: true,
+      createdRound: createdRound,
+      expiresAtRound: createdRound + durationRounds,
+    };
+    this.apply(context);
+    this.update();
   }
 
   toBuffEffect(round: number): BuffEffect {

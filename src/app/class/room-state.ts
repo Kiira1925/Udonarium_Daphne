@@ -199,8 +199,14 @@ export class RoomState extends GameObject {
 
   resetBattle(): number {
     let removedCount = this.effects.length;
-    this.battleSequence = this.battleSequence + 1;
-    this.round = 0;
+    let context = this.toContext();
+    context.syncData = {
+      ...context.syncData,
+      battleSequence: this.battleSequence + 1,
+      round: 0,
+    };
+    this.apply(context);
+    this.update();
     for (let effect of ObjectStore.instance.getObjects(RoomEffectState)) {
       effect.destroy();
     }

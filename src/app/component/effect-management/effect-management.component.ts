@@ -121,6 +121,11 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
         this.ensureSelectedOwner();
         this.requestViewUpdate();
       })
+      .on('UPDATE_GAME_OBJECT', event => {
+        if (this.shouldRefreshForSharedState(event.data.aliasName, event.data.identifier)) {
+          this.requestViewUpdate();
+        }
+      })
       .on('UPDATE_GAME_OBJECT/identifier/RoomState', event => {
         this.requestViewUpdate();
       })
@@ -171,6 +176,13 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
       this.isViewUpdateQueued = false;
       if (!this.isDestroyed) this.changeDetector.detectChanges();
     });
+  }
+
+  private shouldRefreshForSharedState(aliasName: string, identifier: string): boolean {
+    return identifier === 'RoomState'
+      || aliasName === 'room-effect-state'
+      || aliasName === 'room-buff-template-state'
+      || aliasName === 'character-action-state';
   }
 
   incrementRound() {

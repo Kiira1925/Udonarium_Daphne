@@ -80,6 +80,12 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
         this.closeIfForbidden();
         this.requestViewUpdate();
       })
+      .on('UPDATE_GAME_OBJECT', event => {
+        if (this.shouldRefreshForSharedState(event.data.aliasName, event.data.identifier)) {
+          this.closeIfForbidden();
+          this.requestViewUpdate();
+        }
+      })
       .on('UPDATE_GAME_OBJECT/aliasName/character-action-state', event => {
         this.requestViewUpdate();
       })
@@ -127,6 +133,11 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
       this.isViewUpdateQueued = false;
       if (!this.isDestroyed) this.changeDetector.detectChanges();
     });
+  }
+
+  private shouldRefreshForSharedState(aliasName: string, identifier: string): boolean {
+    return identifier === 'RoomState'
+      || aliasName === 'character-action-state';
   }
 
   selectPalette(line: string) {

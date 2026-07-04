@@ -21,10 +21,16 @@ export class RoomBuffTemplateState extends GameObject {
   }
 
   updateFrom(template: Omit<BuffTemplate, 'id'>) {
-    this.ownerIdentifier = template.ownerIdentifier;
-    this.name = template.name;
-    this.entries = (template.effects ?? []).map(entry => ({ ...entry }));
-    this.durationRounds = template.durationRounds;
+    let context = this.toContext();
+    context.syncData = {
+      ...context.syncData,
+      ownerIdentifier: template.ownerIdentifier,
+      name: template.name,
+      entries: (template.effects ?? []).map(entry => ({ ...entry })),
+      durationRounds: template.durationRounds,
+    };
+    this.apply(context);
+    this.update();
   }
 
   toBuffTemplate(): BuffTemplate {
