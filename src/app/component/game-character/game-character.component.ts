@@ -73,6 +73,8 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
   movableOption: MovableOption = {};
   rotableOption: RotableOption = {};
   rollOption: RotableOption = {};
+  private isDestroyed: boolean = false;
+  private isViewUpdateQueued: boolean = false;
 
   constructor(
     private contextMenuService: ContextMenuService,
@@ -86,32 +88,32 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
     EventSystem.unregister(this);
     EventSystem.register(this)
       .on(`UPDATE_GAME_OBJECT/identifier/${this.gameCharacter?.identifier}`, event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on(`UPDATE_OBJECT_CHILDREN/identifier/${this.gameCharacter?.identifier}`, event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('SYNCHRONIZE_FILE_LIST', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('UPDATE_FILE_RESOURE', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on(`UPDATE_SELECTION/identifier/${this.gameCharacter?.identifier}`, event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('UPDATE_GAME_OBJECT/identifier/RoomState', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('UPDATE_GAME_OBJECT/aliasName/room-effect-state', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('UPDATE_GAME_OBJECT/aliasName/character-action-state', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('DELETE_GAME_OBJECT', event => {
         if (event.data.aliasName === 'room-effect-state' || event.data.aliasName === 'character-action-state') {
-          this.changeDetector.markForCheck();
+          this.requestViewUpdate();
         }
       });
     this.movableOption = {
@@ -129,7 +131,20 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.isDestroyed = true;
     EventSystem.unregister(this);
+  }
+
+  private requestViewUpdate() {
+    if (this.isDestroyed) return;
+    this.changeDetector.markForCheck();
+    if (this.isViewUpdateQueued) return;
+
+    this.isViewUpdateQueued = true;
+    Promise.resolve().then(() => {
+      this.isViewUpdateQueued = false;
+      if (!this.isDestroyed) this.changeDetector.detectChanges();
+    });
   }
 
   @HostListener('dragstart', ['$event'])

@@ -44,6 +44,8 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
   editPalette: string = '';
 
   private doubleClickTimer: NodeJS.Timeout = null;
+  private isDestroyed: boolean = false;
+  private isViewUpdateQueued: boolean = false;
 
   get diceBotInfos() { return DiceBot.diceBotInfos }
 
@@ -76,18 +78,19 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
       })
       .on('UPDATE_GAME_OBJECT/identifier/RoomState', event => {
         this.closeIfForbidden();
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('UPDATE_GAME_OBJECT/aliasName/character-action-state', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('DELETE_GAME_OBJECT', event => {
-        if (event.data.aliasName === 'character-action-state') this.changeDetector.markForCheck();
+        if (event.data.aliasName === 'character-action-state') this.requestViewUpdate();
       });
     this.closeIfForbidden();
   }
 
   ngOnDestroy() {
+    this.isDestroyed = true;
     EventSystem.unregister(this);
     if (this.isEdit) this.toggleEditMode();
   }
@@ -112,6 +115,18 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
     if (this.character && !RoomState.instance.canAccessGMCharacter(this.character)) {
       this.panelService.close();
     }
+  }
+
+  private requestViewUpdate() {
+    if (this.isDestroyed) return;
+    this.changeDetector.markForCheck();
+    if (this.isViewUpdateQueued) return;
+
+    this.isViewUpdateQueued = true;
+    Promise.resolve().then(() => {
+      this.isViewUpdateQueued = false;
+      if (!this.isDestroyed) this.changeDetector.detectChanges();
+    });
   }
 
   selectPalette(line: string) {

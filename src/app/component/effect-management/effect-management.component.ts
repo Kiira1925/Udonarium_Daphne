@@ -31,6 +31,8 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
   editingTemplate: TemplateForm = this.createTemplateForm('');
   isTemplateEditorOpen: boolean = false;
   message: string = '';
+  private isDestroyed: boolean = false;
+  private isViewUpdateQueued: boolean = false;
 
   get roomState(): RoomState { return RoomState.instance; }
   get round(): number { return this.roomState.round; }
@@ -117,19 +119,19 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
     EventSystem.register(this)
       .on(`UPDATE_GAME_OBJECT/aliasName/${GameCharacter.aliasName}`, event => {
         this.ensureSelectedOwner();
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('UPDATE_GAME_OBJECT/identifier/RoomState', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('UPDATE_GAME_OBJECT/aliasName/room-effect-state', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('UPDATE_GAME_OBJECT/aliasName/room-buff-template-state', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('UPDATE_GAME_OBJECT/aliasName/character-action-state', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('DELETE_GAME_OBJECT', event => {
         if (event.data.aliasName === GameCharacter.aliasName) this.ensureSelectedOwner();
@@ -137,15 +139,16 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
           || event.data.aliasName === 'room-effect-state'
           || event.data.aliasName === 'room-buff-template-state'
           || event.data.aliasName === 'character-action-state') {
-          this.changeDetector.markForCheck();
+          this.requestViewUpdate();
         }
       })
       .on('UPDATE_SELECTION', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       });
   }
 
   ngOnDestroy() {
+    this.isDestroyed = true;
     EventSystem.unregister(this);
   }
 
@@ -155,7 +158,19 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
     this.editingTemplate = this.createTemplateForm(character.identifier);
     this.isTemplateEditorOpen = false;
     this.message = '';
+    this.requestViewUpdate();
+  }
+
+  private requestViewUpdate() {
+    if (this.isDestroyed) return;
     this.changeDetector.markForCheck();
+    if (this.isViewUpdateQueued) return;
+
+    this.isViewUpdateQueued = true;
+    Promise.resolve().then(() => {
+      this.isViewUpdateQueued = false;
+      if (!this.isDestroyed) this.changeDetector.detectChanges();
+    });
   }
 
   incrementRound() {
