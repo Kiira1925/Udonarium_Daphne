@@ -30,6 +30,10 @@ export class RoomState extends GameObject {
   private static readonly identifier = 'RoomState';
   private static readonly gmModeStorageKey = 'udonarium-daphne-gm-mode';
 
+  constructor(identifier: string = RoomState.identifier) {
+    super(identifier);
+  }
+
   static get instance(): RoomState {
     let state = ObjectStore.instance.get<RoomState>(RoomState.identifier);
     if (!state) {
@@ -83,6 +87,17 @@ export class RoomState extends GameObject {
     EventSystem.unregister(this);
   }
 
+  override initialize() {
+    let existing = ObjectStore.instance.get<RoomState>(RoomState.identifier);
+    if (existing && existing !== this) {
+      existing.apply(this.toContext());
+      existing.update();
+      return;
+    }
+
+    super.initialize();
+  }
+
   override apply(context: ObjectContext) {
     let syncData = { ...context.syncData };
     let legacyEffects = Array.isArray(syncData['effects']) ? syncData['effects'] as BuffEffect[] : [];
@@ -99,6 +114,18 @@ export class RoomState extends GameObject {
     if (legacyEffects.length || legacyTemplates.length || legacyActionDoneIds.length) {
       queueMicrotask(() => this.migrateLegacyState(legacyEffects, legacyTemplates, legacyActionDoneIds));
     }
+  }
+
+  resetForRoomLoad() {
+    let context = this.toContext();
+    context.syncData = {
+      ...context.syncData,
+      round: 0,
+      battleSequence: 1,
+      roomMasterUserId: '',
+    };
+    this.apply(context);
+    this.update();
   }
 
   addEffect(target: GameCharacter, name: string, entries: BuffEffectEntry[], remainingRounds: number): BuffEffect | null {
@@ -134,12 +161,15 @@ export class RoomState extends GameObject {
   }
 
   canAccessGMCharacter(character: GameCharacter): boolean {
-    return !character.isGMCreated || this.isGM();
+    return true;
   }
 
   applyTemplateToSelected(template: BuffTemplate): number {
+    return this.applyTemplateToCharacters(template, this.selectedCharacters());
+  }
+
+  applyTemplateToCharacters(template: BuffTemplate, targets: GameCharacter[]): number {
     let addedCount = 0;
-    let targets = this.selectedCharacters();
     for (let target of targets) {
       if (this.addEffect(target, template.name, this.effectEntries(template), template.durationRounds)) {
         addedCount++;
@@ -169,8 +199,14 @@ export class RoomState extends GameObject {
 
   resetBattle(): number {
     let removedCount = this.effects.length;
-    this.battleSequence = this.battleSequence + 1;
-    this.round = 0;
+    let context = this.toContext();
+    context.syncData = {
+      ...context.syncData,
+      battleSequence: this.battleSequence + 1,
+      round: 0,
+    };
+    this.apply(context);
+    this.update();
     for (let effect of ObjectStore.instance.getObjects(RoomEffectState)) {
       effect.destroy();
     }
@@ -280,6 +316,14 @@ export class RoomState extends GameObject {
   selectedCharacters(): GameCharacter[] {
     let objects = TabletopSelectionService.instance?.objects ?? [];
     return objects.filter((object): object is GameCharacter => object instanceof GameCharacter);
+  }
+
+  private buffCommandTargets(chatMessage: ChatMessage): GameCharacter[] {
+    let targets = this.selectedCharacters();
+    if (0 < targets.length) return targets;
+
+    let source = ObjectStore.instance.get<GameCharacter>(chatMessage.sourceIdentifier);
+    return source instanceof GameCharacter ? [source] : [];
   }
 
   tableCharacters(): GameCharacter[] {
@@ -462,7 +506,7 @@ export class RoomState extends GameObject {
       return true;
     }
 
-    let targets = this.selectedCharacters();
+    let targets = this.buffCommandTargets(chatMessage);
     if (targets.length < 1) {
       this.sendSystemMessage(chatMessage, tabIdentifier, '対象コマが選択されていません');
       return true;
@@ -492,13 +536,13 @@ export class RoomState extends GameObject {
       return true;
     }
 
-    let targets = this.selectedCharacters();
+    let targets = this.buffCommandTargets(chatMessage);
     if (targets.length < 1) {
       this.sendSystemMessage(chatMessage, tabIdentifier, '対象コマが選択されていません');
       return true;
     }
 
-    let addedCount = this.applyTemplateToSelected(template);
+    let addedCount = this.applyTemplateToCharacters(template, targets);
     this.sendSystemMessage(chatMessage, tabIdentifier, `${template.name} / 残り${template.durationRounds}R を${addedCount}体に付与`);
     return true;
   }

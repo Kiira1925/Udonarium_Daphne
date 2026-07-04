@@ -1,5 +1,6 @@
 import { BuffEffectEntry } from './buff-effect';
 import { CharacterActionState } from './character-action-state';
+import { RoomBuffTemplateState } from './room-buff-template-state';
 import { RoomEffectState } from './room-effect-state';
 
 describe('RoomEffectState', () => {
@@ -45,11 +46,73 @@ describe('RoomEffectState', () => {
     expect(state.toBuffEffect(3).remainingRounds).toBe(2);
     expect(state.toBuffEffect(5).remainingRounds).toBe(0);
   });
+
+  it('refreshes all shared fields together', () => {
+    let state = new RoomEffectState('effect-refresh-test');
+    state.active = false;
+    state.createdRound = 1;
+    state.expiresAtRound = 2;
+
+    state.refresh(4, 3);
+
+    let context = state.toContext();
+    expect(context.syncData['active']).toBe(true);
+    expect(context.syncData['createdRound']).toBe(4);
+    expect(context.syncData['expiresAtRound']).toBe(7);
+  });
 });
 
 describe('CharacterActionState', () => {
   it('uses one independent state identifier per character', () => {
     expect(CharacterActionState.identifierFor('character-1')).not.toBe(CharacterActionState.identifierFor('character-2'));
   });
+
+  it('sets battle sequence and completed round together', () => {
+    let state = new CharacterActionState('action-test');
+    state.battleSequence = 1;
+    state.completedRound = 1;
+
+    state.setCompleted(2, 0);
+
+    let context = state.toContext();
+    expect(context.syncData['battleSequence']).toBe(2);
+    expect(context.syncData['completedRound']).toBe(0);
+  });
 });
 
+describe('RoomBuffTemplateState', () => {
+  it('updates all template fields together', () => {
+    let templateStrength: BuffEffectEntry = {
+      kind: 'stat',
+      statusName: 'Strength',
+      operator: '+',
+      amount: 2,
+      description: '',
+    };
+    let templateArmor: BuffEffectEntry = {
+      kind: 'stat',
+      statusName: 'Armor',
+      operator: '+',
+      amount: 1,
+      description: '',
+    };
+    let state = new RoomBuffTemplateState('template-test');
+    state.updateFrom({
+      ownerIdentifier: 'character-1',
+      name: 'template',
+      effects: [templateStrength, templateArmor],
+      kind: 'stat',
+      statusName: 'Strength',
+      operator: '+',
+      amount: 2,
+      description: '',
+      durationRounds: 5,
+    });
+
+    let context = state.toContext();
+    expect(context.syncData['ownerIdentifier']).toBe('character-1');
+    expect(context.syncData['name']).toBe('template');
+    expect(context.syncData['entries']).toEqual([templateStrength, templateArmor]);
+    expect(context.syncData['durationRounds']).toBe(5);
+  });
+});

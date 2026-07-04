@@ -31,6 +31,8 @@ export class GameObjectInventoryComponent implements OnInit, OnDestroy {
   selectedIdentifier: string = '';
 
   isEdit: boolean = false;
+  private isDestroyed: boolean = false;
+  private isViewUpdateQueued: boolean = false;
 
   get sortTag(): string { return this.inventoryService.sortTag; }
   set sortTag(sortTag: string) { this.inventoryService.sortTag = sortTag; }
@@ -58,23 +60,28 @@ export class GameObjectInventoryComponent implements OnInit, OnDestroy {
       .on('SELECT_TABLETOP_OBJECT', event => {
         if (ObjectStore.instance.get(event.data.identifier) instanceof TabletopObject) {
           this.selectedIdentifier = event.data.identifier;
-          this.changeDetector.markForCheck();
+          this.requestViewUpdate();
         }
       })
       .on('SYNCHRONIZE_FILE_LIST', event => {
-        if (event.isSendFromSelf) this.changeDetector.markForCheck();
+        if (event.isSendFromSelf) this.requestViewUpdate();
       })
       .on('UPDATE_INVENTORY', event => {
-        if (event.isSendFromSelf) this.changeDetector.markForCheck();
+        if (event.isSendFromSelf) this.requestViewUpdate();
+      })
+      .on('UPDATE_GAME_OBJECT', event => {
+        if (this.shouldRefreshForSharedState(event.data.aliasName, event.data.identifier)) {
+          this.requestViewUpdate();
+        }
       })
       .on('UPDATE_GAME_OBJECT/identifier/RoomState', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('UPDATE_GAME_OBJECT/aliasName/character-action-state', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('UPDATE_GAME_OBJECT/aliasName/room-effect-state', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('OPEN_NETWORK', event => {
         this.inventoryTypes = ['table', 'common', Network.peerId, 'graveyard'];
@@ -86,7 +93,26 @@ export class GameObjectInventoryComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.isDestroyed = true;
     EventSystem.unregister(this);
+  }
+
+  private requestViewUpdate() {
+    if (this.isDestroyed) return;
+    this.changeDetector.markForCheck();
+    if (this.isViewUpdateQueued) return;
+
+    this.isViewUpdateQueued = true;
+    Promise.resolve().then(() => {
+      this.isViewUpdateQueued = false;
+      if (!this.isDestroyed) this.changeDetector.detectChanges();
+    });
+  }
+
+  private shouldRefreshForSharedState(aliasName: string, identifier: string): boolean {
+    return identifier === 'RoomState'
+      || aliasName === 'room-effect-state'
+      || aliasName === 'character-action-state';
   }
 
   getTabTitle(inventoryType: string) {

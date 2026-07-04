@@ -31,6 +31,8 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
   editingTemplate: TemplateForm = this.createTemplateForm('');
   isTemplateEditorOpen: boolean = false;
   message: string = '';
+  private isDestroyed: boolean = false;
+  private isViewUpdateQueued: boolean = false;
 
   get roomState(): RoomState { return RoomState.instance; }
   get round(): number { return this.roomState.round; }
@@ -56,6 +58,20 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
 
   get selectedTargets(): GameCharacter[] {
     return this.roomState.selectedCharacters();
+  }
+
+  get templateApplyTargets(): GameCharacter[] {
+    let targets = this.selectedTargets;
+    if (0 < targets.length) return targets;
+
+    return this.selectedOwner ? [this.selectedOwner] : [];
+  }
+
+  get templateApplyTargetLabel(): string {
+    let selectedCount = this.selectedTargets.length;
+    if (0 < selectedCount) return `選択中のコマ ${selectedCount}体`;
+
+    return this.selectedOwner ? `使用コマ ${this.selectedOwner.name}` : '対象なし';
   }
 
   get effectGroups(): EffectGroup[] {
@@ -103,19 +119,24 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
     EventSystem.register(this)
       .on(`UPDATE_GAME_OBJECT/aliasName/${GameCharacter.aliasName}`, event => {
         this.ensureSelectedOwner();
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
+      })
+      .on('UPDATE_GAME_OBJECT', event => {
+        if (this.shouldRefreshForSharedState(event.data.aliasName, event.data.identifier)) {
+          this.requestViewUpdate();
+        }
       })
       .on('UPDATE_GAME_OBJECT/identifier/RoomState', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('UPDATE_GAME_OBJECT/aliasName/room-effect-state', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('UPDATE_GAME_OBJECT/aliasName/room-buff-template-state', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('UPDATE_GAME_OBJECT/aliasName/character-action-state', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       })
       .on('DELETE_GAME_OBJECT', event => {
         if (event.data.aliasName === GameCharacter.aliasName) this.ensureSelectedOwner();
@@ -123,15 +144,16 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
           || event.data.aliasName === 'room-effect-state'
           || event.data.aliasName === 'room-buff-template-state'
           || event.data.aliasName === 'character-action-state') {
-          this.changeDetector.markForCheck();
+          this.requestViewUpdate();
         }
       })
       .on('UPDATE_SELECTION', event => {
-        this.changeDetector.markForCheck();
+        this.requestViewUpdate();
       });
   }
 
   ngOnDestroy() {
+    this.isDestroyed = true;
     EventSystem.unregister(this);
   }
 
@@ -141,7 +163,26 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
     this.editingTemplate = this.createTemplateForm(character.identifier);
     this.isTemplateEditorOpen = false;
     this.message = '';
+    this.requestViewUpdate();
+  }
+
+  private requestViewUpdate() {
+    if (this.isDestroyed) return;
     this.changeDetector.markForCheck();
+    if (this.isViewUpdateQueued) return;
+
+    this.isViewUpdateQueued = true;
+    Promise.resolve().then(() => {
+      this.isViewUpdateQueued = false;
+      if (!this.isDestroyed) this.changeDetector.detectChanges();
+    });
+  }
+
+  private shouldRefreshForSharedState(aliasName: string, identifier: string): boolean {
+    return identifier === 'RoomState'
+      || aliasName === 'room-effect-state'
+      || aliasName === 'room-buff-template-state'
+      || aliasName === 'character-action-state';
   }
 
   incrementRound() {
@@ -249,10 +290,24 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
   }
 
   applyTemplate(template: BuffTemplate) {
-    let count = this.roomState.applyTemplateToSelected(template);
+    let count = this.roomState.applyTemplateToCharacters(template, this.templateApplyTargets);
     this.message = count
       ? `${template.name} を${count}体に付与しました`
-      : '対象コマが選択されていません';
+      : '対象コマがありません';
+  }
+
+  async copyAllTemplateCommands() {
+    let commands = this.selectedTemplates.map(template => this.templateCommand(template));
+    if (commands.length < 1) {
+      this.message = 'コピーできるテンプレートがありません';
+      return;
+    }
+
+    let isCopied = await this.copyTextToClipboard(commands.join('\n'));
+    this.message = isCopied
+      ? `${commands.length}件のテンプレートをチャットコマンド形式でコピーしました`
+      : 'クリップボードへのコピーに失敗しました';
+    this.requestViewUpdate();
   }
 
   addTemplateEffect() {
@@ -270,6 +325,40 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
       let sign = entry.operator === '*' ? 'x' : entry.operator;
       return `${entry.statusName} ${sign}${entry.amount}`;
     }).join(' / ');
+  }
+
+  private templateCommand(template: BuffTemplate): string {
+    let effects = this.roomState.effectEntries(template)
+      .map(entry => this.effectEntryCommand(entry))
+      .join(';');
+    return `/buff ${template.name}/${effects}/${template.durationRounds}`;
+  }
+
+  private effectEntryCommand(entry: BuffEffectEntry): string {
+    if (entry.kind === 'note') return entry.description ?? '';
+    return `${entry.statusName}${entry.operator}${entry.amount}`;
+  }
+
+  private async copyTextToClipboard(text: string): Promise<boolean> {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch (_error) {
+      // Fall through to the textarea fallback below.
+    }
+
+    let textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    let isCopied = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return isCopied;
   }
 
   effectKindLabel(kind: BuffEffectKind): string {

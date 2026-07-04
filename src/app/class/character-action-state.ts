@@ -21,8 +21,14 @@ export class CharacterActionState extends GameObject {
   }
 
   setCompleted(battleSequence: number, completedRound: number) {
-    this.battleSequence = battleSequence;
-    this.completedRound = completedRound;
+    let context = this.toContext();
+    context.syncData = {
+      ...context.syncData,
+      battleSequence: battleSequence,
+      completedRound: completedRound,
+    };
+    this.apply(context);
+    this.update();
   }
 }
 
