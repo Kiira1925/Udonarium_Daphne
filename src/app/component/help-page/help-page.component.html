@@ -87,7 +87,9 @@
     </table>
     <p class="example-note">例: <code>:HP-1d6</code> はHPからBCDiceの結果を減らします。</p>
     <p class="example-note">例: <code>:HP-10+5</code> は <code>-10+5</code> を計算し、HP-5として扱います。</p>
+    <p class="example-note">式内の空括弧 <code>()</code> は0として扱われるため、チャットパレットの入力欄用の雛形に使えます。</p>
     <p class="example-note">例: <code>:HP-5+&#123;防護&#125;</code> は防護を参照して最終値を計算します。</p>
+    <p class="example-note">未登録の補正ステータスを式で参照した場合は、詳細の「バフ・デバフ」欄へ0の項目として自動追加されます。</p>
     <p class="example-note">例: <code>:HP+30M!</code> は最大値を超えず、増減反転も防ぎます。</p>
     <p class="example-note">例: <code>:HP-4+&#123;防護&#125;! 【ダメージ計算】</code> は先頭のリソース操作だけを処理し、後半をコメントとして残します。</p>
   </section>
