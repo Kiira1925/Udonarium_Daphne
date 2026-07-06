@@ -29,6 +29,7 @@ interface ResourceCommand {
 export class RoomState extends GameObject {
   private static readonly identifier = 'RoomState';
   private static readonly gmModeStorageKey = 'udonarium-daphne-gm-mode';
+  private static readonly buffStatusGroupName = 'バフ・デバフ';
 
   constructor(identifier: string = RoomState.identifier) {
     super(identifier);
@@ -131,6 +132,7 @@ export class RoomState extends GameObject {
   addEffect(target: GameCharacter, name: string, entries: BuffEffectEntry[], remainingRounds: number): BuffEffect | null {
     let normalizedEntries = this.normalizeEffectEntries(entries);
     if (normalizedEntries.length < 1) return null;
+    this.ensureEffectStatusElements(target, normalizedEntries);
 
     let identifier = RoomEffectState.identifierFor(target.identifier, this.battleSequence, name, normalizedEntries);
     let existing = ObjectStore.instance.get<RoomEffectState>(identifier);
@@ -280,23 +282,26 @@ export class RoomState extends GameObject {
     let base = this.toNumber(element.isNumberResource ? element.currentValue : element.value);
     if (base == null) return null;
 
-    let multipliers = 1;
-    let additions = 0;
-    for (let effect of this.effectsForTargetIdentifier(targetIdentifier, element.name)) {
-      for (let entry of this.effectEntries(effect)) {
-        if (entry.kind !== 'stat' || !this.isSameStatusName(entry.statusName, element.name)) continue;
-        if (entry.operator === '*') {
-          multipliers *= entry.amount;
-        } else if (entry.operator === '+') {
-          additions += entry.amount;
-        } else if (entry.operator === '-') {
-          additions -= entry.amount;
-        }
-      }
-    }
+    let modifier = this.effectModifierFor(targetIdentifier, element.name);
+    if (!modifier.hasModifier) return null;
 
-    let modified = base * multipliers + additions;
+    let modified = base * modifier.multipliers + modifier.additions;
     return Number.isInteger(modified) ? modified + '' : modified.toString();
+  }
+
+  effectModifierSummary(targetIdentifier: string, element: DataElement): { modifierText: string, modifiedValue: string } | null {
+    let base = this.toNumber(element.isNumberResource ? element.currentValue : element.value);
+    if (base == null) return null;
+
+    let modifier = this.effectModifierFor(targetIdentifier, element.name);
+    if (!modifier.hasModifier) return null;
+
+    let modified = base * modifier.multipliers + modifier.additions;
+    let modifiedValue = Number.isInteger(modified) ? modified + '' : modified.toString();
+    return {
+      modifierText: this.formatEffectModifier(modifier.multipliers, modifier.additions),
+      modifiedValue: modifiedValue,
+    };
   }
 
   effectsFor(target: GameCharacter, statusName?: string): BuffEffect[] {
@@ -831,6 +836,53 @@ export class RoomState extends GameObject {
 
   private isSameStatusName(effectStatusName: string, elementStatusName: string): boolean {
     return StringUtil.equals(effectStatusName.trim(), elementStatusName.trim(), CompareOption.IgnoreCase | CompareOption.IgnoreWidth);
+  }
+
+  private ensureEffectStatusElements(target: GameCharacter, entries: BuffEffectEntry[]) {
+    if (!target?.rootDataElement || !target.detailDataElement) return;
+
+    for (let entry of entries) {
+      if (entry.kind !== 'stat' || !entry.statusName) continue;
+      let existing = target.rootDataElement
+        .getElementsByName(entry.statusName, CompareOption.IgnoreCase | CompareOption.IgnoreWidth)
+        .find(element => element instanceof DataElement);
+      if (existing) continue;
+
+      let group = target.detailDataElement.getFirstElementByName(RoomState.buffStatusGroupName, CompareOption.IgnoreWidth);
+      if (!group) {
+        group = DataElement.create(RoomState.buffStatusGroupName);
+        target.detailDataElement.appendChild(group);
+      }
+      group.appendChild(DataElement.create(entry.statusName, 0));
+    }
+  }
+
+  private effectModifierFor(targetIdentifier: string, statusName: string): { hasModifier: boolean, multipliers: number, additions: number } {
+    let hasModifier = false;
+    let multipliers = 1;
+    let additions = 0;
+    for (let effect of this.effectsForTargetIdentifier(targetIdentifier, statusName)) {
+      for (let entry of this.effectEntries(effect)) {
+        if (entry.kind !== 'stat' || !this.isSameStatusName(entry.statusName, statusName)) continue;
+        hasModifier = true;
+        if (entry.operator === '*') {
+          multipliers *= entry.amount;
+        } else if (entry.operator === '+') {
+          additions += entry.amount;
+        } else if (entry.operator === '-') {
+          additions -= entry.amount;
+        }
+      }
+    }
+
+    return { hasModifier, multipliers, additions };
+  }
+
+  private formatEffectModifier(multipliers: number, additions: number): string {
+    let parts: string[] = [];
+    if (multipliers !== 1) parts.push(`x${multipliers}`);
+    if (additions !== 0) parts.push(0 < additions ? `+${additions}` : `${additions}`);
+    return parts.join(' ');
   }
 
   private effectKind(effect: Pick<BuffEffect | BuffTemplate | BuffEffectEntry, 'kind'>): BuffEffectKind {
