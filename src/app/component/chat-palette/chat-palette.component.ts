@@ -168,7 +168,10 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
     let selectedCharacters = this.selectionService.objects
       .filter(object => object instanceof GameCharacter) as GameCharacter[];
 
-    return selectedCharacters.length ? selectedCharacters : [this.character];
+    if (selectedCharacters.some(character => character.identifier === this.character.identifier)) {
+      return selectedCharacters;
+    }
+    return [this.character];
   }
 
   resetPletteSelect() {

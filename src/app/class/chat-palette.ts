@@ -16,6 +16,8 @@ export interface PaletteVariable {
 
 @SyncObject('chat-palette')
 export class ChatPalette extends ObjectNode {
+  private static readonly buffStatusGroupName = 'バフ・デバフ';
+
   @SyncVar() dicebot: string = '';
   //TODO: キャラシ項目のコピー
 
@@ -70,6 +72,9 @@ export class ChatPalette extends ObjectNode {
         }
         if (extendVariables) {
           let element = extendVariables.getFirstElementByName(name, CompareOption.IgnoreWidth);
+          if (!element && this.shouldCreateMissingStatus(evaluate)) {
+            element = this.ensureBuffStatusElement(extendVariables, name);
+          }
           if (element) {
             let targetIdentifier = this.findOwnerIdentifier(extendVariables);
             let effectedValue = targetIdentifier ? RoomState.instance.applyEffectsByTargetIdentifier(targetIdentifier, element) : null;
@@ -112,9 +117,38 @@ export class ChatPalette extends ObjectNode {
   }
 
   private findOwnerIdentifier(element: DataElement): string {
+    let owner = this.findOwnerNode(element);
+    return owner ? owner.identifier : null;
+  }
+
+  private shouldCreateMissingStatus(source: string): boolean {
+    return /^\s*:/.test(source) || /[+\-*/=()（）＋－＊／＝]/.test(source);
+  }
+
+  private ensureBuffStatusElement(rootDataElement: DataElement, name: string): DataElement {
+    if (!name) return null;
+    let existingElement = rootDataElement.getFirstElementByName(name, CompareOption.IgnoreWidth);
+    if (existingElement) return existingElement;
+
+    let owner: any = this.findOwnerNode(rootDataElement);
+    let detailElement: DataElement = owner && owner.detailDataElement ? owner.detailDataElement : null;
+    if (!detailElement) return null;
+
+    let group = detailElement.getFirstElementByName(ChatPalette.buffStatusGroupName, CompareOption.IgnoreWidth);
+    if (!group) {
+      group = DataElement.create(ChatPalette.buffStatusGroupName);
+      detailElement.appendChild(group);
+    }
+
+    let element = DataElement.create(name, 0);
+    group.appendChild(element);
+    return element;
+  }
+
+  private findOwnerNode(element: DataElement): ObjectNode {
     let node: ObjectNode = element;
     while (node) {
-      if (node.parent && !(node.parent instanceof DataElement)) return node.parent.identifier;
+      if (node.parent && !(node.parent instanceof DataElement)) return node.parent;
       node = node.parent;
     }
     return null;

@@ -1,6 +1,9 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnChanges, OnDestroy, OnInit } from '@angular/core';
+import { ObjectNode } from '@udonarium/core/synchronize-object/object-node';
 import { EventSystem } from '@udonarium/core/system';
 import { DataElement } from '@udonarium/data-element';
+import { GameCharacter } from '@udonarium/game-character';
+import { RoomState } from '@udonarium/room-state';
 
 @Component({
   selector: 'game-data-element, [game-data-element]',
@@ -26,6 +29,14 @@ export class GameDataElementComponent implements OnInit, OnChanges, OnDestroy {
   get currentValue(): number | string { return this._currentValue; }
   set currentValue(currentValue: number | string) { this._currentValue = currentValue; this.setUpdateTimer(); }
 
+  get effectModifierText(): string {
+    return this.effectModifierSummary()?.modifierText ?? '';
+  }
+
+  get effectModifiedValue(): string {
+    return this.effectModifierSummary()?.modifiedValue ?? '';
+  }
+
   private updateTimer: NodeJS.Timeout = null;
 
   constructor(
@@ -43,8 +54,17 @@ export class GameDataElementComponent implements OnInit, OnChanges, OnDestroy {
         this.setValues(this.gameDataElement);
         this.changeDetector.markForCheck();
       })
+      .on('UPDATE_GAME_OBJECT/aliasName/room-effect-state', event => {
+        this.changeDetector.markForCheck();
+      })
+      .on('UPDATE_GAME_OBJECT/aliasName/room-state', event => {
+        this.changeDetector.markForCheck();
+      })
       .on('DELETE_GAME_OBJECT', event => {
         if (this.gameDataElement && this.gameDataElement.identifier === event.data.identifier) {
+          this.changeDetector.markForCheck();
+        }
+        if (event.data.aliasName === 'room-effect-state') {
           this.changeDetector.markForCheck();
         }
       });
@@ -88,6 +108,24 @@ export class GameDataElementComponent implements OnInit, OnChanges, OnDestroy {
     this._name = object.name;
     this._currentValue = object.currentValue;
     this._value = object.value;
+  }
+
+  private effectModifierSummary(): { modifierText: string, modifiedValue: string } | null {
+    if (!this.gameDataElement || 0 < this.gameDataElement.children.length) return null;
+    let owner = this.ownerCharacter();
+    if (!owner) return null;
+    return RoomState.instance.effectModifierSummary(owner.identifier, this.gameDataElement);
+  }
+
+  private ownerCharacter(): GameCharacter | null {
+    let node: ObjectNode = this.gameDataElement;
+    while (node) {
+      if (node.parent && !(node.parent instanceof DataElement)) {
+        return node.parent instanceof GameCharacter ? node.parent : null;
+      }
+      node = node.parent;
+    }
+    return null;
   }
 
   private setUpdateTimer() {

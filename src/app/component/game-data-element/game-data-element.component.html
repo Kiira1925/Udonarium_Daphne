@@ -37,6 +37,9 @@
           <input style="width:100%; min-width:10px;" size="1" [(ngModel)]="value" placeholder="Value" />
         </ng-container>
       </ng-container>
+      <div class="effect-modifier" *ngIf="effectModifierText">
+        補正 {{effectModifierText}} → {{effectModifiedValue}}
+      </div>
     </div>
   </ng-container>
   <ng-container *ngIf="0 < gameDataElement.children.length">
