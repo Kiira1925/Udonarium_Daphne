@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+
 import { RoomSettingComponent } from './room-setting.component';
 
 describe('RoomSettingComponent', () => {
@@ -8,7 +10,7 @@ describe('RoomSettingComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ RoomSettingComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));

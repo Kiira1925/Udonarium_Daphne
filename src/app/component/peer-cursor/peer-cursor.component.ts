@@ -18,9 +18,9 @@ export class PeerCursorComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('opacity') opacityElementRef: ElementRef;
   @Input() cursor: PeerCursor = PeerCursor.myCursor;
 
-  get iconUrl(): string { return this.cursor.image.url; }
-  get name(): string { return this.cursor.name }
-  get isMine(): boolean { return this.cursor.isMine; }
+  get iconUrl(): string { return this.cursor?.image?.url ?? ''; }
+  get name(): string { return this.cursor?.name ?? '' }
+  get isMine(): boolean { return this.cursor?.isMine ?? true; }
 
   private cursorElement: HTMLElement = null;
   private opacityElement: HTMLElement = null;

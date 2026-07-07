@@ -1,5 +1,8 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+import { CardStack } from '@udonarium/card-stack';
+
 import { CardStackComponent } from './card-stack.component';
 
 describe('CardStackComponent', () => {
@@ -8,7 +11,7 @@ describe('CardStackComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ CardStackComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));
@@ -16,6 +19,7 @@ describe('CardStackComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(CardStackComponent);
     component = fixture.componentInstance;
+    component.cardStack = CardStack.create('test');
     fixture.detectChanges();
   });
 

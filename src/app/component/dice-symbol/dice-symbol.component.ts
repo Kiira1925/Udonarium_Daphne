@@ -168,7 +168,7 @@ export class DiceSymbolComponent implements OnChanges, AfterViewInit, OnDestroy 
   }
 
   ngOnDestroy() {
-    this.interactGesture.destroy();
+    this.interactGesture?.destroy();
     EventSystem.unregister(this);
   }
 

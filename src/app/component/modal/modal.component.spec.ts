@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+
 import { ModalComponent } from './modal.component';
 
 describe('ModalComponent', () => {
@@ -8,7 +10,7 @@ describe('ModalComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ ModalComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));

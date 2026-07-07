@@ -1,5 +1,8 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+import { GameCharacter } from '@udonarium/game-character';
+
 import { GameCharacterSheetComponent } from './game-character-sheet.component';
 
 describe('GameCharacterSheetComponent', () => {
@@ -8,7 +11,7 @@ describe('GameCharacterSheetComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ GameCharacterSheetComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));
@@ -16,6 +19,7 @@ describe('GameCharacterSheetComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(GameCharacterSheetComponent);
     component = fixture.componentInstance;
+    component.tabletopObject = GameCharacter.create('test', 1, '');
     fixture.detectChanges();
   });
 

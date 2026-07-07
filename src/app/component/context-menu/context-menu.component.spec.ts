@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+
 import { ContextMenuComponent } from './context-menu.component';
 
 describe('ContextMenuComponent', () => {
@@ -8,7 +10,7 @@ describe('ContextMenuComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ ContextMenuComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));

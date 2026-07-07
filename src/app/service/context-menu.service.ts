@@ -24,7 +24,9 @@ export interface ContextMenuAction {
   subActions?: ContextMenuAction[]
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class ContextMenuService {
   /* Todo */
   static defaultParentViewContainerRef: ViewContainerRef;

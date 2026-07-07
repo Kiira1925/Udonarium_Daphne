@@ -20,7 +20,9 @@ export interface AppConfig {
 const objectPropertyKeys = Object.getOwnPropertyNames(Object.prototype);
 const arrayPropertyKeys = Object.getOwnPropertyNames(Array.prototype);
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class AppConfigService {
 
   constructor() { }

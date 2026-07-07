@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+
 import { JukeboxComponent } from './jukebox.component';
 
 describe('JukeboxComponent', () => {
@@ -8,7 +10,7 @@ describe('JukeboxComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ JukeboxComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));

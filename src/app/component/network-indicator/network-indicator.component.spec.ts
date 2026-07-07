@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+
 import { NetworkIndicatorComponent } from './network-indicator.component';
 
 describe('NetworkIndicatorComponent', () => {
@@ -8,7 +10,7 @@ describe('NetworkIndicatorComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ NetworkIndicatorComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));

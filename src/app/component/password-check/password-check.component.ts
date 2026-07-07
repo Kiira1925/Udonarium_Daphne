@@ -27,8 +27,8 @@ export class PasswordCheckComponent implements OnInit, AfterViewInit, OnDestroy 
     private panelService: PanelService,
     private modalService: ModalService
   ) {
-    this.targetPeers = modalService.option.peers ?? [];
-    this.title = modalService.option.title ? modalService.option.title : '';
+    this.targetPeers = modalService.option?.peers ?? [];
+    this.title = modalService.option?.title ? modalService.option.title : '';
   }
 
   ngOnInit() {

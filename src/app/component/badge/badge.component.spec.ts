@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+
 import { BadgeComponent } from './badge.component';
 
 describe('BadgeComponent', () => {
@@ -8,7 +10,7 @@ describe('BadgeComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ BadgeComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));

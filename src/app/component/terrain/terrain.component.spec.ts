@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+
 import { TerrainComponent } from './terrain.component';
 
 describe('TerrainComponent', () => {
@@ -8,7 +10,7 @@ describe('TerrainComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ TerrainComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));

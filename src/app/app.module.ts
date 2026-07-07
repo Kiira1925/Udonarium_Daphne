@@ -46,15 +46,6 @@ import { RotableDirective } from 'directive/rotable.directive';
 import { TooltipDirective } from 'directive/tooltip.directive';
 import { SafePipe } from 'pipe/safe.pipe';
 
-import { AppConfigService } from 'service/app-config.service';
-import { ChatMessageService } from 'service/chat-message.service';
-import { ContextMenuService } from 'service/context-menu.service';
-import { GameObjectInventoryService } from 'service/game-object-inventory.service';
-import { ModalService } from 'service/modal.service';
-import { PanelService } from 'service/panel.service';
-import { PointerDeviceService } from 'service/pointer-device.service';
-import { TabletopService } from 'service/tabletop.service';
-
 import { AppComponent } from './app.component';
 
 @NgModule({
@@ -110,16 +101,7 @@ import { AppComponent } from './app.component';
     CommonModule,
     FormsModule
   ],
-  providers: [
-    AppConfigService,
-    ChatMessageService,
-    ContextMenuService,
-    ModalService,
-    GameObjectInventoryService,
-    PanelService,
-    PointerDeviceService,
-    TabletopService,
-  ],
+  providers: [],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

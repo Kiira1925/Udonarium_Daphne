@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+
 import { FileStorageComponent } from './file-storage.component';
 
 describe('FileStorageComponent', () => {
@@ -8,7 +10,7 @@ describe('FileStorageComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ FileStorageComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));

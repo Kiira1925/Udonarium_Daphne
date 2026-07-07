@@ -47,7 +47,7 @@ export class CardStackListComponent implements OnChanges, OnDestroy {
 
   ngOnDestroy() {
     EventSystem.unregister(this);
-    if (this.cardStack.owner === this.owner) {
+    if (this.cardStack && this.cardStack.owner === this.owner) {
       this.cardStack.owner = '';
     }
   }

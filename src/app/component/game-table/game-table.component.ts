@@ -121,9 +121,9 @@ export class GameTableComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnDestroy() {
     EventSystem.unregister(this);
-    this.mouseGesture.destroy();
-    this.touchGesture.destroy();
-    this.pickGesture.destroy();
+    this.mouseGesture?.destroy();
+    this.touchGesture?.destroy();
+    this.pickGesture?.destroy();
   }
 
   initializeTableTouchGesture() {

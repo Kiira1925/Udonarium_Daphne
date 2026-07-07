@@ -24,7 +24,9 @@ type ObjectIdentifier = string;
 type ObjecNodeIndex = number;
 type LocationName = string;
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class TabletopService {
   private _emptyTable: GameTable = new GameTable('');
   get tableSelecter(): TableSelecter { return TableSelecter.instance; }

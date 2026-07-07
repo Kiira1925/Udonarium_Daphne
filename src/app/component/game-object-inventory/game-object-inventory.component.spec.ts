@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+
 import { GameObjectInventoryComponent } from './game-object-inventory.component';
 
 describe('GameObjectInventoryComponent', () => {
@@ -8,7 +10,7 @@ describe('GameObjectInventoryComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ GameObjectInventoryComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));

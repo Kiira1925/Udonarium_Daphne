@@ -41,17 +41,17 @@ export class TerrainComponent implements OnChanges, OnDestroy, AfterViewInit {
   get mode(): TerrainViewState { return this.terrain.mode; }
   set mode(mode: TerrainViewState) { this.terrain.mode = mode; }
 
-  get isLocked(): boolean { return this.terrain.isLocked; }
-  set isLocked(isLocked: boolean) { this.terrain.isLocked = isLocked; }
-  get hasWall(): boolean { return this.terrain.hasWall; }
-  get hasFloor(): boolean { return this.terrain.hasFloor; }
+  get isLocked(): boolean { return this.terrain?.isLocked ?? false; }
+  set isLocked(isLocked: boolean) { if (this.terrain) this.terrain.isLocked = isLocked; }
+  get hasWall(): boolean { return this.terrain?.hasWall ?? false; }
+  get hasFloor(): boolean { return this.terrain?.hasFloor ?? false; }
 
-  get wallImage(): ImageFile { return this.imageService.getSkeletonOr(this.terrain.wallImage); }
-  get floorImage(): ImageFile { return this.imageService.getSkeletonOr(this.terrain.floorImage); }
+  get wallImage(): ImageFile { return this.imageService.getSkeletonOr(this.terrain?.wallImage); }
+  get floorImage(): ImageFile { return this.imageService.getSkeletonOr(this.terrain?.floorImage); }
 
-  get height(): number { return MathUtil.clampMin(this.terrain.height); }
-  get width(): number { return MathUtil.clampMin(this.terrain.width); }
-  get depth(): number { return MathUtil.clampMin(this.terrain.depth); }
+  get height(): number { return MathUtil.clampMin(this.terrain?.height ?? 0); }
+  get width(): number { return MathUtil.clampMin(this.terrain?.width ?? 0); }
+  get depth(): number { return MathUtil.clampMin(this.terrain?.depth ?? 0); }
 
   get isVisibleFloor(): boolean { return 0 < this.width * this.depth; }
   get isVisibleWallTopBottom(): boolean { return 0 < this.width * this.height; }
@@ -116,7 +116,7 @@ export class TerrainComponent implements OnChanges, OnDestroy, AfterViewInit {
   }
 
   ngOnDestroy() {
-    this.input.destroy();
+    this.input?.destroy();
     EventSystem.unregister(this);
   }
 

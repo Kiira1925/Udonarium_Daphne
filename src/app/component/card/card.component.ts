@@ -134,7 +134,7 @@ export class CardComponent implements OnDestroy, OnChanges, AfterViewInit {
   }
 
   ngOnDestroy() {
-    this.interactGesture.destroy();
+    this.interactGesture?.destroy();
     EventSystem.unregister(this);
   }
 

@@ -56,7 +56,6 @@ export class ChatPalette extends ObjectNode {
       evaluate = line.palette;
     }
 
-    console.log(evaluate);
     let limit = 128;
     let loop = 0;
     let isContinue = true;
@@ -65,7 +64,6 @@ export class ChatPalette extends ObjectNode {
       isContinue = false;
       evaluate = evaluate.replace(/[{｛]\s*([^{}｛｝]+)\s*[}｝]/g, (match, name) => {
         name = StringUtil.toHalfWidth(name);
-        console.log(name);
         isContinue = true;
         for (let variable of this.paletteVariables) {
           if (variable.name == name) return variable.value;

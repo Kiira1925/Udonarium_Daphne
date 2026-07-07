@@ -1,5 +1,8 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+import { PeerCursor } from '@udonarium/peer-cursor';
+
 import { PeerCursorComponent } from './peer-cursor.component';
 
 describe('PeerCursorComponent', () => {
@@ -8,7 +11,7 @@ describe('PeerCursorComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ PeerCursorComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));
@@ -16,6 +19,7 @@ describe('PeerCursorComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(PeerCursorComponent);
     component = fixture.componentInstance;
+    component.cursor = new PeerCursor();
     fixture.detectChanges();
   });
 

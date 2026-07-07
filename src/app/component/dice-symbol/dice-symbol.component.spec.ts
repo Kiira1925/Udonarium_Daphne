@@ -1,5 +1,8 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+import { DiceSymbol, DiceType } from '@udonarium/dice-symbol';
+
 import { DiceSymbolComponent } from './dice-symbol.component';
 
 describe('DiceSymbolComponent', () => {
@@ -8,7 +11,7 @@ describe('DiceSymbolComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ DiceSymbolComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));
@@ -16,6 +19,7 @@ describe('DiceSymbolComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(DiceSymbolComponent);
     component = fixture.componentInstance;
+    component.diceSymbol = DiceSymbol.create('test', DiceType.D6, 1);
     fixture.detectChanges();
   });
 

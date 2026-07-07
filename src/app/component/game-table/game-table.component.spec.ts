@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+
 import { GameTableComponent } from './game-table.component';
 
 describe('GameTableComponent', () => {
@@ -8,7 +10,7 @@ describe('GameTableComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ GameTableComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));

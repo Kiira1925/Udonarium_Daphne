@@ -1,5 +1,8 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+import { GameCharacter } from '@udonarium/game-character';
+
 import { ChatPaletteComponent } from './chat-palette.component';
 
 describe('ChatPaletteComponent', () => {
@@ -8,7 +11,7 @@ describe('ChatPaletteComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ ChatPaletteComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));
@@ -16,6 +19,7 @@ describe('ChatPaletteComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(ChatPaletteComponent);
     component = fixture.componentInstance;
+    component.character = GameCharacter.create('test', 1, '');
     fixture.detectChanges();
   });
 

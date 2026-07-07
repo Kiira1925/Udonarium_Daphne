@@ -11,7 +11,9 @@ import { RoomState } from '@udonarium/room-state';
 
 const HOURS = 60 * 60 * 1000;
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class ChatMessageService {
   private intervalTimer: NodeJS.Timeout = null;
   private timeOffset: number = Date.now();

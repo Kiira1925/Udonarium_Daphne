@@ -22,16 +22,16 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
   @ViewChild('chatPlette') chatPletteElementRef: ElementRef<HTMLSelectElement>;
   @Input() character: GameCharacter = null;
 
-  get palette(): ChatPalette { return this.character.chatPalette; }
+  get palette(): ChatPalette { return this.character?.chatPalette ?? null; }
 
   private _gameType: string = '';
   get gameType(): string { return !this._gameType ? 'DiceBot' : this._gameType; };
   set gameType(gameType: string) {
     this._gameType = gameType;
-    if (this.character.chatPalette) this.character.chatPalette.dicebot = gameType;
+    if (this.character?.chatPalette) this.character.chatPalette.dicebot = gameType;
   };
 
-  get sendFrom(): string { return this.character.identifier; }
+  get sendFrom(): string { return this.character?.identifier ?? ''; }
   set sendFrom(sendFrom: string) {
     this.onSelectedCharacter(sendFrom);
   }
@@ -65,15 +65,15 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     Promise.resolve().then(() => this.updatePanelTitle());
-    this.chatTabidentifier = this.chatMessageService.chatTabs ? this.chatMessageService.chatTabs[0].identifier : '';
-    this.gameType = this.character.chatPalette ? this.character.chatPalette.dicebot : '';
+    this.chatTabidentifier = this.chatMessageService.chatTabs?.[0]?.identifier ?? '';
+    this.gameType = this.character?.chatPalette ? this.character.chatPalette.dicebot : '';
     EventSystem.register(this)
       .on('DELETE_GAME_OBJECT', event => {
         if (this.character && this.character.identifier === event.data.identifier) {
           this.panelService.close();
         }
         if (this.chatTabidentifier === event.data.identifier) {
-          this.chatTabidentifier = this.chatMessageService.chatTabs ? this.chatMessageService.chatTabs[0].identifier : '';
+          this.chatTabidentifier = this.chatMessageService.chatTabs?.[0]?.identifier ?? '';
         }
       })
       .on('UPDATE_GAME_OBJECT/identifier/RoomState', event => {
@@ -102,6 +102,7 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
   }
 
   updatePanelTitle() {
+    if (!this.character) return;
     this.panelService.title = this.character.name + ' のチャットパレット';
   }
 
@@ -156,7 +157,7 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
   }
 
   sendChat(value: { text: string, gameType: string, sendFrom: string, sendTo: string }) {
-    if (this.chatTab) {
+    if (this.chatTab && this.palette) {
       for (let character of this.rollCharacters) {
         let text = this.palette.evaluate(value.text, character.rootDataElement);
         this.chatMessageService.sendMessage(this.chatTab, text, value.gameType, character.identifier, value.sendTo);
@@ -165,6 +166,7 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
   }
 
   private get rollCharacters(): GameCharacter[] {
+    if (!this.character) return [];
     let selectedCharacters = this.selectionService.objects
       .filter(object => object instanceof GameCharacter) as GameCharacter[];
 
@@ -180,6 +182,7 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
   }
 
   toggleEditMode() {
+    if (!this.palette) return;
     this.isEdit = this.isEdit ? false : true;
     if (this.isEdit) {
       this.editPalette = this.palette.value + '';
@@ -189,6 +192,7 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
   }
 
   toggleActionDone() {
+    if (!this.character) return;
     this.roomState.toggleActionDone(this.character);
   }
 }

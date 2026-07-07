@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+
 import { UIPanelComponent } from './ui-panel.component';
 
 describe('UIPanelComponent', () => {
@@ -8,7 +10,7 @@ describe('UIPanelComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ UIPanelComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));

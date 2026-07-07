@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+
 import { GameDataElementComponent } from './game-data-element.component';
 
 describe('GameDataElementComponent', () => {
@@ -8,7 +10,7 @@ describe('GameDataElementComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ GameDataElementComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));

@@ -167,17 +167,17 @@ Ctrl+マウス左ボタン+ドラッグ操作 : マウスカーソルの触れ�
       this.scrollEventShortTimer = new ResettableTimeout(() => this.lazyScrollUpdate(), 33);
       this.scrollEventLongTimer = new ResettableTimeout(() => this.lazyScrollUpdate(false), 66);
       this.onScroll();
-      this.panelService.scrollablePanel.addEventListener('scroll', this.callbackOnScroll, false);
-      this.panelService.scrollablePanel.addEventListener('scrolltobottom', this.callbackOnScrollToBottom, false);
+      this.panelService.scrollablePanel?.addEventListener('scroll', this.callbackOnScroll, false);
+      this.panelService.scrollablePanel?.addEventListener('scrolltobottom', this.callbackOnScrollToBottom, false);
     });
   }
 
   ngOnDestroy() {
     EventSystem.unregister(this);
-    this.panelService.scrollablePanel.removeEventListener('scroll', this.callbackOnScroll, false);
-    this.panelService.scrollablePanel.removeEventListener('scrolltobottom', this.callbackOnScrollToBottom, false);
-    this.scrollEventShortTimer.clear();
-    this.scrollEventLongTimer.clear();
+    this.panelService.scrollablePanel?.removeEventListener('scroll', this.callbackOnScroll, false);
+    this.panelService.scrollablePanel?.removeEventListener('scrolltobottom', this.callbackOnScrollToBottom, false);
+    this.scrollEventShortTimer?.clear();
+    this.scrollEventLongTimer?.clear();
     if (this.addMessageEventTimer) clearTimeout(this.addMessageEventTimer);
     this.addMessageEventTimer = null;
   }
@@ -205,7 +205,7 @@ Ctrl+マウス左ボタン+ドラッグ操作 : マウスカーソルの触れ�
 
   resetMessages() {
     let lastIndex = this.chatTab.chatMessages.length - 1;
-    this.topIndex = lastIndex - Math.floor(this.panelService.scrollablePanel.clientHeight / this.minMessageHeight);
+    this.topIndex = lastIndex - Math.floor((this.panelService.scrollablePanel?.clientHeight ?? 0) / this.minMessageHeight);
     this.bottomIndex = lastIndex;
     this.needUpdate = true;
     this.preScrollTop = -1;
@@ -237,9 +237,9 @@ Ctrl+マウス左ボタン+ドラッグ操作 : マウスカーソルの触れ�
   }
 
   private getScrollPosition(): ScrollPosition {
-    let top = this.panelService.scrollablePanel.scrollTop;
-    let clientHeight = this.panelService.scrollablePanel.clientHeight;
-    let scrollHeight = this.panelService.scrollablePanel.scrollHeight;
+    let top = this.panelService.scrollablePanel?.scrollTop ?? 0;
+    let clientHeight = this.panelService.scrollablePanel?.clientHeight ?? 0;
+    let scrollHeight = this.panelService.scrollablePanel?.scrollHeight ?? 0;
     if (top < 0) top = 0;
     if (scrollHeight - clientHeight < top)
       top = scrollHeight - clientHeight;

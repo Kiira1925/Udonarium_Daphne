@@ -98,7 +98,7 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
   }
 
   ngOnDestroy() {
-    this.input.destroy();
+    this.input?.destroy();
     EventSystem.unregister(this);
   }
 

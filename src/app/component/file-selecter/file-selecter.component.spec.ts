@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+
 import { FileSelecterComponent } from './file-selecter.component';
 
 describe('FileSelecterComponent', () => {
@@ -8,7 +10,7 @@ describe('FileSelecterComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ FileSelecterComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));

@@ -13,7 +13,9 @@ export interface PanelOption {
   height?: number;
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class PanelService {
   /* Todo */
   static defaultParentViewContainerRef: ViewContainerRef;

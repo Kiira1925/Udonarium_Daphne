@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+
 import { PeerMenuComponent } from './peer-menu.component';
 
 describe('PeerMenuComponent', () => {
@@ -8,7 +10,7 @@ describe('PeerMenuComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ PeerMenuComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));

@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+
 import { ChatInputComponent } from './chat-input.component';
 
 describe('ChatInputComponent', () => {
@@ -8,7 +10,7 @@ describe('ChatInputComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ ChatInputComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));

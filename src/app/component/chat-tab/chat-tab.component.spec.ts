@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+
 import { ChatTabComponent } from './chat-tab.component';
 
 describe('ChatTabComponent', () => {
@@ -8,7 +10,7 @@ describe('ChatTabComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ ChatTabComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));

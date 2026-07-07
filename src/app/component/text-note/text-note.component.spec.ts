@@ -1,5 +1,8 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+import { TextNote } from '@udonarium/text-note';
+
 import { TextNoteComponent } from './text-note.component';
 
 describe('TextNoteComponent', () => {
@@ -8,7 +11,7 @@ describe('TextNoteComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ TextNoteComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));
@@ -16,6 +19,7 @@ describe('TextNoteComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(TextNoteComponent);
     component = fixture.componentInstance;
+    component.textNote = TextNote.create('title', 'text');
     fixture.detectChanges();
   });
 

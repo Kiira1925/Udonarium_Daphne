@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 
+import { AppModule } from '../../app.module';
+
 import { TextViewComponent } from './text-view.component';
 
 describe('TextViewComponent', () => {
@@ -8,7 +10,7 @@ describe('TextViewComponent', () => {
 
   beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ TextViewComponent ]
+      imports: [ AppModule ]
     })
     .compileComponents();
   }));
