@@ -729,7 +729,7 @@ export class RoomState extends GameObject {
   }
 
   private evaluateSimpleExpression(expression: string): number | null {
-    let normalized = StringUtil.toHalfWidth(expression).replace(/\(\s*\)/g, '0').trim();
+    let normalized = StringUtil.toHalfWidth(expression).replace(/\(\s*\)/g, '(0)').trim();
     if (!/^[\d+\-*/().\s]+$/.test(normalized)) return null;
 
     try {
