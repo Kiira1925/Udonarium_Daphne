@@ -27,6 +27,7 @@ export interface BuffTemplate {
   id: string;
   ownerIdentifier: string;
   effects?: BuffEffectEntry[];
+  resourceCommands?: string[];
   kind?: BuffEffectKind;
   name: string;
   statusName?: string;

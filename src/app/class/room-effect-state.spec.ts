@@ -108,6 +108,7 @@ describe('RoomBuffTemplateState', () => {
       amount: 2,
       description: '',
       durationRounds: 5,
+      resourceCommands: [':MP-3'],
     });
 
     let context = state.toContext();
@@ -115,6 +116,19 @@ describe('RoomBuffTemplateState', () => {
     expect(context.syncData['name']).toBe('template');
     expect(context.syncData['entries']).toEqual([templateStrength, templateArmor]);
     expect(context.syncData['durationRounds']).toBe(5);
+    expect(context.syncData['resourceCommands']).toEqual([':MP-3']);
+  });
+
+  it('exports resource commands with the template', () => {
+    let state = RoomBuffTemplateState.create('character-1', 'template', [{
+      kind: 'stat',
+      statusName: 'Accuracy',
+      operator: '+',
+      amount: 1,
+      description: '',
+    }], 3, 'template-resource-test', [':MP-3', ':Stone-1']);
+
+    expect(state.toBuffTemplate().resourceCommands).toEqual([':MP-3', ':Stone-1']);
   });
 });
 
@@ -138,6 +152,13 @@ describe('RoomState command parsing', () => {
     expect(parsed.hasInvalidCommand).toBe(false);
     expect(parsed.commands.length).toBe(1);
     expect(parsed.commands[0].resourceName).toBe('MP');
+  });
+
+  it('validates resource command text for templates', () => {
+    let state = new RoomState('room-command-test');
+
+    expect(state.normalizeResourceCommandTokens(':MP-3 :Stone-1')).toEqual([':MP-3', ':Stone-1']);
+    expect(state.normalizeResourceCommandTokens(':MP-3 memo')).toBeNull();
   });
 
   it('leaves non-trailing resource-like text in the command body', () => {
