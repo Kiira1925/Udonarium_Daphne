@@ -2,6 +2,7 @@ import { BuffEffectEntry } from './buff-effect';
 import { CharacterActionState } from './character-action-state';
 import { RoomBuffTemplateState } from './room-buff-template-state';
 import { RoomEffectState } from './room-effect-state';
+import { RoomState } from './room-state';
 
 describe('RoomEffectState', () => {
   const strength: BuffEffectEntry = {
@@ -114,5 +115,37 @@ describe('RoomBuffTemplateState', () => {
     expect(context.syncData['name']).toBe('template');
     expect(context.syncData['entries']).toEqual([templateStrength, templateArmor]);
     expect(context.syncData['durationRounds']).toBe(5);
+  });
+});
+
+describe('RoomState command parsing', () => {
+  it('extracts trailing resource commands from a buff template command', () => {
+    let state = new RoomState('room-command-test');
+    let parsed = (state as any).extractTrailingResourceCommands('/buff CatsEye :MP-3 :Stone-1');
+
+    expect(parsed.commandText).toBe('/buff CatsEye');
+    expect(parsed.hasInvalidCommand).toBe(false);
+    expect(parsed.commands.map(command => command.resourceName)).toEqual(['MP', 'Stone']);
+    expect(parsed.commands.map(command => command.operator)).toEqual(['-', '-']);
+    expect(parsed.commands.map(command => command.expression)).toEqual(['3', '1']);
+  });
+
+  it('keeps resource commands out of slash-separated buff syntax', () => {
+    let state = new RoomState('room-command-test');
+    let parsed = (state as any).extractTrailingResourceCommands('/buff CatsEye/Accuracy+1/3 :MP-3');
+
+    expect(parsed.commandText).toBe('/buff CatsEye/Accuracy+1/3');
+    expect(parsed.hasInvalidCommand).toBe(false);
+    expect(parsed.commands.length).toBe(1);
+    expect(parsed.commands[0].resourceName).toBe('MP');
+  });
+
+  it('leaves non-trailing resource-like text in the command body', () => {
+    let state = new RoomState('room-command-test');
+    let parsed = (state as any).extractTrailingResourceCommands('/buff CatsEye :MP-3 comment');
+
+    expect(parsed.commandText).toBe('/buff CatsEye :MP-3 comment');
+    expect(parsed.commands).toEqual([]);
+    expect(parsed.hasInvalidCommand).toBe(false);
   });
 });
