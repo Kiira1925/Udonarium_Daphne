@@ -37,6 +37,9 @@
           <div class="template-status">
             {{formatEffect(template)}} / {{template.durationRounds}}R
           </div>
+          <div class="template-status" *ngIf="template.resourceCommands?.length">
+            {{template.resourceCommands.join(' ')}}
+          </div>
         </div>
         <button title="選択中の対象へ付与" (click)="applyTemplate(template)">
           <i class="material-icons">play_arrow</i>
@@ -124,6 +127,10 @@
       <label class="field narrow">
         <span>効果時間</span>
         <input type="number" min="1" [(ngModel)]="editingTemplate.durationRounds">
+      </label>
+      <label class="field full-row">
+        <span>リソース操作</span>
+        <input [(ngModel)]="editingTemplate.resourceCommandText" placeholder="例: :MP-3 :魔晶石5点-1">
       </label>
       <div class="form-actions">
         <button [attr.disabled]="canSaveTemplate ? null : ''" (click)="saveTemplate()">

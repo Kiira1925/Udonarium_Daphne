@@ -18,6 +18,7 @@ interface TemplateForm {
   name: string;
   effects: BuffEffectEntry[];
   durationRounds: number;
+  resourceCommandText: string;
 }
 
 @Component({
@@ -98,7 +99,8 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
     if (!this.editingTemplate.ownerIdentifier
       || this.editingTemplate.name.trim().length < 1
       || !Number.isFinite(Number(this.editingTemplate.durationRounds))
-      || Number(this.editingTemplate.durationRounds) < 1) {
+      || Number(this.editingTemplate.durationRounds) < 1
+      || this.roomState.normalizeResourceCommandTokens(this.editingTemplate.resourceCommandText) == null) {
       return false;
     }
 
@@ -236,6 +238,7 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
       name: template.name,
       effects: this.roomState.effectEntries(template).map(effect => ({ ...effect })),
       durationRounds: template.durationRounds,
+      resourceCommandText: (template.resourceCommands ?? []).join(' '),
     };
     this.isTemplateEditorOpen = true;
     this.message = '';
@@ -259,11 +262,13 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
       })),
       durationRounds: Math.floor(Number(this.editingTemplate.durationRounds)),
     };
+    let resourceCommands = this.roomState.normalizeResourceCommandTokens(this.editingTemplate.resourceCommandText) ?? [];
 
     if (template.id) {
       this.roomState.updateTemplate({
         ...template,
         ...this.legacyEffectFields(template.effects[0]),
+        resourceCommands: resourceCommands,
       });
       this.message = 'テンプレートを更新しました';
     } else {
@@ -273,6 +278,7 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
         effects: template.effects,
         ...this.legacyEffectFields(template.effects[0]),
         durationRounds: template.durationRounds,
+        resourceCommands: resourceCommands,
       });
       this.message = 'テンプレートを追加しました';
     }
@@ -289,8 +295,8 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
     this.message = 'テンプレートを削除しました';
   }
 
-  applyTemplate(template: BuffTemplate) {
-    let count = this.roomState.applyTemplateToCharacters(template, this.templateApplyTargets);
+  async applyTemplate(template: BuffTemplate) {
+    let count = await this.roomState.applyTemplateToCharactersWithResources(template, this.templateApplyTargets, this.selectedOwner);
     this.message = count
       ? `${template.name} を${count}体に付与しました`
       : '対象コマがありません';
@@ -331,7 +337,8 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
     let effects = this.roomState.effectEntries(template)
       .map(entry => this.effectEntryCommand(entry))
       .join(';');
-    return `/buff ${template.name}/${effects}/${template.durationRounds}`;
+    let resources = template.resourceCommands?.length ? ` ${template.resourceCommands.join(' ')}` : '';
+    return `/buff ${template.name}/${effects}/${template.durationRounds}${resources}`;
   }
 
   private effectEntryCommand(entry: BuffEffectEntry): string {
@@ -403,6 +410,7 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
       name: '',
       effects: [this.createEffectForm()],
       durationRounds: 1,
+      resourceCommandText: '',
     };
   }
 

@@ -180,6 +180,14 @@ export class RoomState extends GameObject {
     return addedCount;
   }
 
+  async applyTemplateToCharactersWithResources(template: BuffTemplate, targets: GameCharacter[], source: GameCharacter): Promise<number> {
+    let addedCount = this.applyTemplateToCharacters(template, targets);
+    if (source instanceof GameCharacter) {
+      await this.executeTemplateResourceCommands(template, source);
+    }
+    return addedCount;
+  }
+
   removeEffect(effectId: string) {
     let effect = ObjectStore.instance.get<RoomEffectState>(effectId);
     if (effect) effect.active = false;
@@ -222,7 +230,9 @@ export class RoomState extends GameObject {
       template.ownerIdentifier,
       template.name,
       entries,
-      Math.floor(Number(template.durationRounds))
+      Math.floor(Number(template.durationRounds)),
+      undefined,
+      this.normalizeResourceCommandTokens((template.resourceCommands ?? []).join(' ')) ?? []
     );
     return created.toBuffTemplate();
   }
@@ -236,6 +246,7 @@ export class RoomState extends GameObject {
       ...template,
       effects: entries,
       durationRounds: Math.floor(Number(template.durationRounds)),
+      resourceCommands: this.normalizeResourceCommandTokens((template.resourceCommands ?? []).join(' ')) ?? [],
     });
   }
 
@@ -257,7 +268,10 @@ export class RoomState extends GameObject {
 
     let importedCount = 0;
     for (let line of palette.getPalette()) {
-      let match = /^\s*\/buff\s+(.+?)\s*$/i.exec(line);
+      let trailingResources = this.extractTrailingResourceCommands(line.trim());
+      if (trailingResources.hasInvalidCommand) continue;
+
+      let match = /^\s*\/buff\s+(.+?)\s*$/i.exec(trailingResources.commandText);
       if (!match) continue;
 
       let parsed = this.parseBuffCommand(match[1]);
@@ -266,6 +280,7 @@ export class RoomState extends GameObject {
       let template: Omit<BuffTemplate, 'id'> = {
         ...parsed,
         ownerIdentifier: character.identifier,
+        resourceCommands: trailingResources.commands.map(command => command.token),
       };
       if (this.hasSameTemplate(template)) continue;
 
@@ -401,7 +416,7 @@ export class RoomState extends GameObject {
     if (await this.handleResourceCommands(text, chatMessage, tabIdentifier)) return;
     if (!text.startsWith('/')) return;
 
-    if (this.handleBuffCommand(text, chatMessage, tabIdentifier)) return;
+    if (await this.handleBuffCommand(text, chatMessage, tabIdentifier)) return;
     if (this.handleRoundCommand(text, chatMessage, tabIdentifier)) return;
   }
 
@@ -455,7 +470,64 @@ export class RoomState extends GameObject {
     };
   }
 
-  private async executeResourceCommand(command: ResourceCommand, source: GameCharacter, chatMessage: ChatMessage, tabIdentifier: string) {
+  normalizeResourceCommandTokens(text: string): string[] | null {
+    let tokens = text.split(/\s+/).map(token => token.trim()).filter(token => 0 < token.length);
+    if (tokens.length < 1) return [];
+    if (tokens.some(token => !token.startsWith(':') || this.parseResourceCommand(token) == null)) return null;
+    return tokens;
+  }
+
+  private extractTrailingResourceCommands(text: string): { commandText: string, commands: ResourceCommand[], hasInvalidCommand: boolean } {
+    let tokens = text.split(/\s+/).filter(token => 0 < token.length);
+    let index = tokens.length - 1;
+    let commandTokens: string[] = [];
+    while (0 <= index && tokens[index].startsWith(':')) {
+      commandTokens.unshift(tokens[index]);
+      index--;
+    }
+
+    if (commandTokens.length < 1) {
+      return { commandText: text, commands: [], hasInvalidCommand: false };
+    }
+
+    let commands = commandTokens.map(token => this.parseResourceCommand(token));
+    return {
+      commandText: tokens.slice(0, index + 1).join(' '),
+      commands: commands.filter((command): command is ResourceCommand => command != null),
+      hasInvalidCommand: commands.some(command => command == null),
+    };
+  }
+
+  private hideResourceCommandsInChatMessage(text: string, commands: ResourceCommand[], source: GameCharacter, chatMessage: ChatMessage) {
+    if (!source.isStatusHidden || commands.length < 1) return;
+
+    let hiddenText = text;
+    for (let command of commands) {
+      hiddenText = hiddenText.replace(command.token, `:${command.resourceName} ??`);
+    }
+    chatMessage.setAttribute('gmText', text);
+    chatMessage.value = hiddenText;
+  }
+
+  private async executeResourceCommands(commands: ResourceCommand[], source: GameCharacter, chatMessage: ChatMessage, tabIdentifier: string) {
+    for (let command of commands) {
+      await this.executeResourceCommand(command, source, chatMessage, tabIdentifier);
+    }
+  }
+
+  private async executeTemplateResourceCommands(template: BuffTemplate, source: GameCharacter, chatMessage?: ChatMessage, tabIdentifier?: string, extraCommands: ResourceCommand[] = []) {
+    let templateCommands = (template.resourceCommands ?? []).map(token => this.parseResourceCommand(token));
+    if (templateCommands.some(command => command == null)) {
+      this.sendResourceSystemMessage(chatMessage, tabIdentifier, 'リソース操作書式: :HP-1d6 / :MP+2 / :HP=10');
+      return;
+    }
+
+    for (let command of [...templateCommands.filter((command): command is ResourceCommand => command != null), ...extraCommands]) {
+      await this.executeResourceCommand(command, source, chatMessage, tabIdentifier);
+    }
+  }
+
+  private async executeResourceCommand(command: ResourceCommand, source: GameCharacter, chatMessage?: ChatMessage, tabIdentifier?: string) {
     let resourceName = command.resourceName;
     let operator = command.operator;
     let options = this.parseResourceOptions(command.expression);
@@ -465,13 +537,13 @@ export class RoomState extends GameObject {
     let operatorForCalculate = operator === '+' || operator === '-' ? '+' : operator;
     let resource = this.findNumberResource(source, resourceName);
     if (!resource) {
-      this.sendSystemMessage(chatMessage, tabIdentifier, `${source.name} に「${resourceName}」リソースは見つかりません`);
+      this.sendResourceSystemMessage(chatMessage, tabIdentifier, `${source.name} に「${resourceName}」リソースは見つかりません`);
       return;
     }
 
-    let operand = await this.evaluateResourceExpression(expressionForEvaluate, chatMessage.tag);
+    let operand = await this.evaluateResourceExpression(expressionForEvaluate, chatMessage?.tag ?? 'DiceBot');
     if (operand == null) {
-      this.sendSystemMessage(chatMessage, tabIdentifier, `式を数値として評価できません: ${expressionForEvaluate}`);
+      this.sendResourceSystemMessage(chatMessage, tabIdentifier, `式を数値として評価できません: ${expressionForEvaluate}`);
       return;
     }
     operand = this.applyResourceOperandOptions(operator, operand, options);
@@ -481,7 +553,7 @@ export class RoomState extends GameObject {
 
     let next = this.calculateResourceValue(current, operatorForCalculate, operand);
     if (next == null) {
-      this.sendSystemMessage(chatMessage, tabIdentifier, `リソース操作に失敗しました: ${operator}${expression}`);
+      this.sendResourceSystemMessage(chatMessage, tabIdentifier, `リソース操作に失敗しました: ${operator}${expression}`);
       return;
     }
     next = this.applyResourceResultOptions(next, resource, options);
@@ -493,16 +565,38 @@ export class RoomState extends GameObject {
     let gmText = shouldHideResourceChat
       ? `${source.name} ${resource.name}: ${current} -> ${resource.currentValue} (${operator}${expression} = ${this.formatResourceOperation(operatorForCalculate, operand)})`
       : '';
-    this.sendSystemMessage(chatMessage, tabIdentifier, publicText, gmText);
+    this.sendResourceSystemMessage(chatMessage, tabIdentifier, publicText, gmText);
   }
 
-  private handleBuffCommand(text: string, chatMessage: ChatMessage, tabIdentifier: string): boolean {
-    let match = /^\/buff\s+(.+)$/i.exec(text);
+  private async handleBuffCommand(text: string, chatMessage: ChatMessage, tabIdentifier: string): Promise<boolean> {
+    let trailingResources = this.extractTrailingResourceCommands(text);
+    let match = /^\/buff\s+(.+)$/i.exec(trailingResources.commandText);
     if (!match) return false;
+
+    if (trailingResources.hasInvalidCommand) {
+      this.sendSystemMessage(chatMessage, tabIdentifier, 'リソース操作書式: :HP-1d6 / :MP+2 / :HP=10');
+      return true;
+    }
+
+    let resourceSource = ObjectStore.instance.get<GameCharacter>(chatMessage.sourceIdentifier);
+    if (0 < trailingResources.commands.length && !(resourceSource instanceof GameCharacter)) {
+      this.sendSystemMessage(chatMessage, tabIdentifier, 'リソース操作には、送信元にキャラコマを指定してください');
+      return true;
+    }
 
     let templateName = match[1].trim();
     if (0 < templateName.length && templateName.indexOf('/') < 0) {
-      return this.handleBuffTemplateCommand(templateName, chatMessage, tabIdentifier);
+      if (resourceSource instanceof GameCharacter) {
+        let template = this.templateFor(resourceSource.identifier, templateName);
+        let targets = this.buffCommandTargets(chatMessage);
+        let templateResources = template ? this.normalizeResourceCommandTokens((template.resourceCommands ?? []).join(' ')) : [];
+        if (!template || targets.length < 1 || templateResources == null) {
+          await this.handleBuffTemplateCommand(templateName, chatMessage, tabIdentifier, trailingResources.commands, text);
+          return true;
+        }
+      }
+
+      return await this.handleBuffTemplateCommand(templateName, chatMessage, tabIdentifier, trailingResources.commands, text);
     }
 
     let parsed = this.parseBuffCommand(match[1]);
@@ -525,10 +619,14 @@ export class RoomState extends GameObject {
     }
 
     this.sendSystemMessage(chatMessage, tabIdentifier, `${parsed.name}: ${this.formatEffectEntries(this.effectEntries(parsed))} / 残り${parsed.durationRounds}R を${addedCount}体に付与`);
+    if (resourceSource instanceof GameCharacter) {
+      this.hideResourceCommandsInChatMessage(text, trailingResources.commands, resourceSource, chatMessage);
+      await this.executeResourceCommands(trailingResources.commands, resourceSource, chatMessage, tabIdentifier);
+    }
     return true;
   }
 
-  private handleBuffTemplateCommand(templateName: string, chatMessage: ChatMessage, tabIdentifier: string): boolean {
+  private async handleBuffTemplateCommand(templateName: string, chatMessage: ChatMessage, tabIdentifier: string, extraResourceCommands: ResourceCommand[] = [], originalText: string = ''): Promise<boolean> {
     let source = ObjectStore.instance.get<GameCharacter>(chatMessage.sourceIdentifier);
     if (!(source instanceof GameCharacter)) {
       this.sendSystemMessage(chatMessage, tabIdentifier, 'テンプレートを呼び出すには、送信元にキャラコマを指定してください');
@@ -541,6 +639,11 @@ export class RoomState extends GameObject {
       return true;
     }
 
+    if (this.normalizeResourceCommandTokens((template.resourceCommands ?? []).join(' ')) == null) {
+      this.sendSystemMessage(chatMessage, tabIdentifier, 'リソース操作書式: :HP-1d6 / :MP+2 / :HP=10');
+      return true;
+    }
+
     let targets = this.buffCommandTargets(chatMessage);
     if (targets.length < 1) {
       this.sendSystemMessage(chatMessage, tabIdentifier, '対象コマが選択されていません');
@@ -549,6 +652,8 @@ export class RoomState extends GameObject {
 
     let addedCount = this.applyTemplateToCharacters(template, targets);
     this.sendSystemMessage(chatMessage, tabIdentifier, `${template.name} / 残り${template.durationRounds}R を${addedCount}体に付与`);
+    this.hideResourceCommandsInChatMessage(originalText || chatMessage.text, extraResourceCommands, source, chatMessage);
+    await this.executeTemplateResourceCommands(template, source, chatMessage, tabIdentifier, extraResourceCommands);
     return true;
   }
 
@@ -653,7 +758,7 @@ export class RoomState extends GameObject {
       let durationRounds = Math.floor(Number(template.durationRounds));
       if (!template.id || !template.ownerIdentifier || !template.name || entries.length < 1 || durationRounds < 1) continue;
       if (ObjectStore.instance.get(template.id) || ObjectStore.instance.isDeleted(template.id)) continue;
-      RoomBuffTemplateState.create(template.ownerIdentifier, template.name, entries, durationRounds, template.id);
+      RoomBuffTemplateState.create(template.ownerIdentifier, template.name, entries, durationRounds, template.id, this.normalizeResourceCommandTokens((template.resourceCommands ?? []).join(' ')) ?? []);
     }
 
     if (this.round <= 0) return;
@@ -686,7 +791,13 @@ export class RoomState extends GameObject {
       this.isSameText(item.name, template.name)
       && item.durationRounds === template.durationRounds
       && this.isSameEffectEntries(this.effectEntries(item), this.effectEntries(template))
+      && this.isSameStringList(item.resourceCommands ?? [], template.resourceCommands ?? [])
     );
+  }
+
+  private isSameStringList(first: string[], second: string[]): boolean {
+    if (first.length !== second.length) return false;
+    return first.every((value, index) => value === second[index]);
   }
 
   private findNumberResource(character: GameCharacter, resourceName: string): DataElement | null {
@@ -769,6 +880,14 @@ export class RoomState extends GameObject {
     return `${operator}${operand}`;
   }
 
+  private sendResourceSystemMessage(originalMessage: ChatMessage | undefined, tabIdentifier: string | undefined, text: string, gmText: string = '') {
+    if (originalMessage && tabIdentifier) {
+      this.sendSystemMessage(originalMessage, tabIdentifier, text, gmText);
+    } else {
+      this.sendMainSystemMessage(text, gmText);
+    }
+  }
+
   private sendSystemMessage(originalMessage: ChatMessage, tabIdentifier: string, text: string, gmText: string = '') {
     let chatTab = ObjectStore.instance.get<ChatTab>(tabIdentifier);
     if (!chatTab) return;
@@ -789,7 +908,7 @@ export class RoomState extends GameObject {
     chatTab.addMessage(message);
   }
 
-  private sendMainSystemMessage(text: string) {
+  private sendMainSystemMessage(text: string, gmText: string = '') {
     let chatTab = ObjectStore.instance.get<ChatTab>('MainTab') ?? ChatTabList.instance.chatTabs[0];
     if (!chatTab) return;
 
@@ -805,6 +924,7 @@ export class RoomState extends GameObject {
       name: 'Round',
       text: text,
       round: this.round,
+      gmText: gmText,
     };
     chatTab.addMessage(message);
   }
