@@ -3,11 +3,14 @@ import { Component, Input, OnDestroy, OnInit } from '@angular/core';
 import { EventSystem, Network } from '@udonarium/core/system';
 import { DataElement } from '@udonarium/data-element';
 import { GameCharacter } from '@udonarium/game-character';
+import { GameTableMaskScratchLock } from '@udonarium/game-table-mask-scratch-lock';
+import { GameTableMask } from '@udonarium/game-table-mask';
 import { RoomState } from '@udonarium/room-state';
 import { PresetSound, SoundEffect } from '@udonarium/sound-effect';
 import { TabletopObject } from '@udonarium/tabletop-object';
 
 import { FileSelecterComponent } from 'component/file-selecter/file-selecter.component';
+import { GameTableMaskScratchService } from 'service/game-table-mask-scratch.service';
 import { ModalService } from 'service/modal.service';
 import { PanelService } from 'service/panel.service';
 import { SaveDataService } from 'service/save-data.service';
@@ -35,7 +38,8 @@ export class GameCharacterSheetComponent implements OnInit, OnDestroy {
   constructor(
     private saveDataService: SaveDataService,
     private panelService: PanelService,
-    private modalService: ModalService
+    private modalService: ModalService,
+    private gameTableMaskScratchService: GameTableMaskScratchService
   ) { }
 
   ngOnInit() {
@@ -47,8 +51,15 @@ export class GameCharacterSheetComponent implements OnInit, OnDestroy {
       })
       .on('UPDATE_GAME_OBJECT/identifier/RoomState', event => {
         this.closeIfForbidden();
+      })
+      .on(`UPDATE_GAME_OBJECT/aliasName/${GameTableMaskScratchLock.aliasName}`, event => {
+        if (this.tabletopObject instanceof GameTableMask
+          && event.data.identifier === GameTableMaskScratchLock.identifierFor(this.tabletopObject.identifier)) {
+          this.closeIfScratchLocked();
+        }
       });
     this.closeIfForbidden();
+    this.closeIfScratchLocked();
   }
 
   ngOnDestroy() {
@@ -56,10 +67,12 @@ export class GameCharacterSheetComponent implements OnInit, OnDestroy {
   }
 
   toggleEditMode() {
+    if (!this.canModifyTabletopObject()) return;
     this.isEdit = this.isEdit ? false : true;
   }
 
   addDataElement() {
+    if (!this.canModifyTabletopObject()) return;
     if (this.tabletopObject.detailDataElement) {
       let title = DataElement.create('見出し', '', {});
       let tag = DataElement.create('タグ', '', {});
@@ -69,6 +82,7 @@ export class GameCharacterSheetComponent implements OnInit, OnDestroy {
   }
 
   clone() {
+    if (!this.canModifyTabletopObject()) return;
     let cloneObject = this.tabletopObject.clone();
     if (cloneObject instanceof GameCharacter) {
       cloneObject.markAsCreatedBy(Network.peer.userId, RoomState.instance.isGM() || this.tabletopObject instanceof GameCharacter && this.tabletopObject.isGMCreated);
@@ -121,12 +135,13 @@ export class GameCharacterSheetComponent implements OnInit, OnDestroy {
   }
 
   setLocation(locationName: string) {
+    if (!this.canModifyTabletopObject()) return;
     this.tabletopObject.setLocation(locationName);
   }
 
   openModal(name: string = '', isAllowedEmpty: boolean = false) {
     this.modalService.open<string>(FileSelecterComponent, { isAllowedEmpty: isAllowedEmpty }).then(value => {
-      if (!this.tabletopObject || !this.tabletopObject.imageDataElement || !value) return;
+      if (!this.canModifyTabletopObject() || !this.tabletopObject?.imageDataElement || !value) return;
       let element = this.tabletopObject.imageDataElement.getFirstElementByName(name);
       if (!element) return;
       element.value = value;
@@ -137,5 +152,18 @@ export class GameCharacterSheetComponent implements OnInit, OnDestroy {
     if (this.tabletopObject instanceof GameCharacter && !RoomState.instance.canAccessGMCharacter(this.tabletopObject)) {
       this.panelService.close();
     }
+  }
+
+  private closeIfScratchLocked() {
+    if (this.tabletopObject instanceof GameTableMask
+      && this.gameTableMaskScratchService.lockFor(this.tabletopObject.identifier)) {
+      this.panelService.close();
+    }
+  }
+
+  private canModifyTabletopObject(): boolean {
+    return this.tabletopObject != null
+      && (!(this.tabletopObject instanceof GameTableMask)
+        || !this.gameTableMaskScratchService.lockFor(this.tabletopObject.identifier));
   }
 }
