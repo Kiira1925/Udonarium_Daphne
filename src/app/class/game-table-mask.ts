@@ -11,6 +11,8 @@ export interface GameTableMaskScratchArea {
   height: number;
 }
 
+export type GameTableMaskScratchMode = 'reveal' | 'restore';
+
 @SyncObject('table-mask')
 export class GameTableMask extends TabletopObject {
   @SyncVar() isLock: boolean = false;
@@ -46,7 +48,11 @@ export class GameTableMask extends TabletopObject {
     let incomingScratchData = typeof incomingAttributes['scratchData'] === 'string'
       ? incomingAttributes['scratchData'] as string
       : '';
-    let scratchData = GameTableMask.mergeScratchData(currentScratchData, incomingScratchData);
+    // 公開範囲は復元操作で減ることもあるため、単純な和集合にはできない。
+    // ロック世代が古い状態だけを退け、同世代以上の確定状態はそのまま採用する。
+    let scratchData = incomingGeneration < currentGeneration
+      ? currentScratchData
+      : incomingScratchData;
 
     let currentCommitToken = typeof this.scratchCommitToken === 'string' ? this.scratchCommitToken : '';
     let incomingCommitToken = typeof incomingAttributes['scratchCommitToken'] === 'string'
@@ -100,20 +106,25 @@ export class GameTableMask extends TabletopObject {
   }
 
   addScratchArea(area: GameTableMaskScratchArea): boolean {
-    return this.applyScratchArea(area, '');
+    return this.applyScratchArea(area, 'reveal', '');
+  }
+
+  restoreScratchArea(area: GameTableMaskScratchArea): boolean {
+    return this.applyScratchArea(area, 'restore', '');
   }
 
   commitScratchArea(
     area: GameTableMaskScratchArea,
     commitToken: string,
-    expectedGeneration: number = this.scratchLockGeneration
+    expectedGeneration: number = this.scratchLockGeneration,
+    mode: GameTableMaskScratchMode = 'reveal'
   ): boolean {
     if (!commitToken) return false;
     if (!GameTableMask.isValidScratchLockGeneration(expectedGeneration)
       || this.scratchLockGeneration !== expectedGeneration) {
       return false;
     }
-    return this.applyScratchArea(area, commitToken, expectedGeneration + 1);
+    return this.applyScratchArea(area, mode, commitToken, expectedGeneration + 1);
   }
 
   advanceScratchLockGeneration(expectedGeneration: number): boolean {
@@ -157,17 +168,20 @@ export class GameTableMask extends TabletopObject {
 
   private applyScratchArea(
     area: GameTableMaskScratchArea,
+    mode: GameTableMaskScratchMode,
     commitToken: string,
     nextLockGeneration?: number
   ): boolean {
     let normalized = GameTableMask.normalizeScratchArea(area, this.width, this.height);
-    if (!normalized) return false;
+    if (!normalized || (mode !== 'reveal' && mode !== 'restore')) return false;
     if (nextLockGeneration != null
       && !GameTableMask.isValidScratchLockGeneration(nextLockGeneration)) {
       return false;
     }
 
-    let areas = GameTableMask.compactScratchAreas(this.scratchAreas.concat(normalized));
+    let areas = mode === 'restore'
+      ? GameTableMask.subtractScratchArea(this.scratchAreas, normalized)
+      : GameTableMask.compactScratchAreas(this.scratchAreas.concat(normalized));
     let context = this.toContext();
     let syncData = context.syncData as { attributes?: Record<string, unknown> };
     context.syncData = {
@@ -213,17 +227,6 @@ export class GameTableMask extends TabletopObject {
       .sort((left, right) => left.y - right.y || left.x - right.x || left.height - right.height || left.width - right.width)
       .map(area => `${area.x},${area.y},${area.width},${area.height}`)
       .join(';');
-  }
-
-  private static mergeScratchData(current: string, incoming: string): string {
-    if (!current) return incoming;
-    if (!incoming) return current;
-    let maximumGridSize = Number.MAX_SAFE_INTEGER;
-    return GameTableMask.encodeScratchData(GameTableMask.parseScratchData(
-      `${current};${incoming}`,
-      maximumGridSize,
-      maximumGridSize
-    ));
   }
 
   static normalizeScratchArea(
@@ -277,6 +280,35 @@ export class GameTableMask extends TabletopObject {
       }
     }
     return compacted;
+  }
+
+  private static subtractScratchArea(
+    areas: GameTableMaskScratchArea[],
+    restoredArea: GameTableMaskScratchArea
+  ): GameTableMaskScratchArea[] {
+    let remainingAreas: GameTableMaskScratchArea[] = [];
+    for (let area of areas) {
+      let left = Math.max(area.x, restoredArea.x);
+      let top = Math.max(area.y, restoredArea.y);
+      let right = Math.min(area.x + area.width, restoredArea.x + restoredArea.width);
+      let bottom = Math.min(area.y + area.height, restoredArea.y + restoredArea.height);
+      if (right <= left || bottom <= top) {
+        remainingAreas.push(area);
+        continue;
+      }
+
+      let areaRight = area.x + area.width;
+      let areaBottom = area.y + area.height;
+      remainingAreas.push(
+        { x: area.x, y: area.y, width: area.width, height: top - area.y },
+        { x: area.x, y: bottom, width: area.width, height: areaBottom - bottom },
+        { x: area.x, y: top, width: left - area.x, height: bottom - top },
+        { x: right, y: top, width: areaRight - right, height: bottom - top },
+      );
+    }
+    return GameTableMask.compactScratchAreas(
+      remainingAreas.filter(area => 0 < area.width && 0 < area.height)
+    );
   }
 
   private static containsScratchArea(container: GameTableMaskScratchArea, area: GameTableMaskScratchArea): boolean {

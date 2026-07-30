@@ -48,6 +48,40 @@ describe('GameTableMask scratch areas', () => {
     expect(mask.scratchLockGeneration).toBe(1);
   });
 
+  it('restores the selected cells inside a published area', () => {
+    let mask = GameTableMask.create('test', 4, 4, 100);
+    mask.addScratchArea({ x: 0, y: 0, width: 4, height: 4 });
+
+    expect(mask.restoreScratchArea({ x: 1, y: 1, width: 2, height: 2 })).toBe(true);
+    expect(mask.scratchAreas).toEqual([
+      { x: 0, y: 0, width: 4, height: 1 },
+      { x: 0, y: 1, width: 1, height: 2 },
+      { x: 3, y: 1, width: 1, height: 2 },
+      { x: 0, y: 3, width: 4, height: 1 },
+    ]);
+  });
+
+  it('records a restore commit and rejects an older revealed state', () => {
+    let mask = GameTableMask.create('test', 3, 3, 100);
+    mask.commitScratchArea({ x: 0, y: 0, width: 3, height: 3 }, 'reveal-token');
+    let staleRevealedContext = mask.toContext();
+
+    expect(mask.commitScratchArea(
+      { x: 1, y: 1, width: 1, height: 1 },
+      'restore-token',
+      1,
+      'restore'
+    )).toBe(true);
+    mask.apply(staleRevealedContext);
+
+    expect(mask.scratchAreas.some(area =>
+      area.x <= 1 && 1 < area.x + area.width
+      && area.y <= 1 && 1 < area.y + area.height
+    )).toBe(false);
+    expect(mask.scratchCommitToken).toBe('restore-token');
+    expect(mask.scratchLockGeneration).toBe(2);
+  });
+
   it('advances a lock generation only from the expected value', () => {
     let mask = GameTableMask.create('test', 3, 3, 100);
 

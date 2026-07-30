@@ -13,7 +13,7 @@
           fill="black"></rect>
       </mask>
     </defs>
-    <g [attr.mask]="'url(#' + scratchMaskId + ')'" [attr.opacity]="isScratchEditing ? 0.3 : 1">
+    <g [attr.mask]="'url(#' + scratchMaskId + ')'" [attr.opacity]="isScratchEditing ? 0.45 : 1">
       <rect *ngIf="imageFile.url.length < 1"
         x="0" y="0" [attr.width]="width" [attr.height]="height"
         fill="rgb(10, 10, 10)" [attr.fill-opacity]="opacity"></rect>
@@ -38,6 +38,7 @@
   </div>
 
   <div *ngIf="isScratchEditing" class="scratch-editor-surface"
+    [ngClass]="{'is-restore': scratchEditMode === 'restore'}"
     (pointerdown)="onScratchPointerDown($event)"
     (pointermove)="onScratchPointerMove($event)"
     (pointerup)="onScratchPointerUp($event)"
@@ -51,6 +52,7 @@
     (touchcancel)="suppressScratchGesture($event)"
     (contextmenu)="suppressScratchContextMenu($event)">
     <div *ngIf="scratchSelection as area" class="scratch-selection"
+      [ngClass]="{'is-restore': scratchEditMode === 'restore'}"
       [style.left.px]="area.x * gridSize" [style.top.px]="area.y * gridSize"
       [style.width.px]="area.width * gridSize" [style.height.px]="area.height * gridSize"></div>
   </div>
@@ -65,11 +67,20 @@
     (touchend)="suppressScratchGesture($event)"
     (touchcancel)="suppressScratchGesture($event)"
     (contextmenu)="suppressScratchContextMenu($event)">
+    <div class="scratch-mode-switch" role="group" aria-label="スクラッチ編集モード">
+      <button type="button" [class.is-active]="scratchEditMode === 'reveal'"
+        [disabled]="isScratchCommitting"
+        (click)="setScratchEditMode('reveal'); $event.stopPropagation()">公開</button>
+      <button type="button" [class.is-active]="scratchEditMode === 'restore'"
+        [disabled]="isScratchCommitting"
+        (click)="setScratchEditMode('restore'); $event.stopPropagation()">元に戻す</button>
+    </div>
     <span class="scratch-toolbar-label" role="status" aria-live="polite">{{scratchSelectionLabel}}</span>
     <button type="button" class="scratch-confirm-button"
+      [class.is-restore]="scratchEditMode === 'restore'"
       [disabled]="!scratchSelection || isScratchCommitting"
       (click)="confirmScratchEditing(); $event.stopPropagation()">
-      {{isScratchCommitting ? '確定中…' : '選択範囲を公開'}}
+      {{scratchConfirmLabel}}
     </button>
     <button type="button" [disabled]="isScratchCommitting"
       (click)="cancelScratchEditing(); $event.stopPropagation()">キャンセル</button>

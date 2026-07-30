@@ -64,6 +64,32 @@ describe('GameTableMaskScratchService arbitration', () => {
     expect(service.lockFor(mask.identifier)).toBeNull();
   });
 
+  it('restores a scratched area through the same owner lock', () => {
+    let mask = GameTableMask.create('test', 4, 4, 100);
+    mask.addScratchArea({ x: 0, y: 0, width: 4, height: 4 });
+    let request = lockRequest(mask, 'restore-token');
+    (service as any).handleLockRequest(request, 'peer-b');
+    request = {
+      ...request,
+      generation: service.lockFor(mask.identifier)!.generation,
+    };
+
+    (service as any).handleCommitRequest({
+      ...request,
+      mode: 'restore',
+      area: { x: 1, y: 1, width: 2, height: 2 },
+    }, 'peer-b');
+
+    expect(mask.scratchAreas).toEqual([
+      { x: 0, y: 0, width: 4, height: 1 },
+      { x: 0, y: 1, width: 1, height: 2 },
+      { x: 3, y: 1, width: 1, height: 2 },
+      { x: 0, y: 3, width: 4, height: 1 },
+    ]);
+    expect(mask.scratchCommitToken).toBe('restore-token');
+    expect(service.lockFor(mask.identifier)).toBeNull();
+  });
+
   it('does not let a delayed release clear a newer lock token', () => {
     let mask = GameTableMask.create('test', 4, 4, 100);
     let oldRequest = lockRequest(mask, 'old-token');

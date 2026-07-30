@@ -4,7 +4,11 @@ import { ObjectSynchronizer } from '@udonarium/core/synchronize-object/object-sy
 import { EventSystem, Network } from '@udonarium/core/system';
 import { UUID } from '@udonarium/core/system/util/uuid';
 import { GameTableMaskScratchLock } from '@udonarium/game-table-mask-scratch-lock';
-import { GameTableMask, GameTableMaskScratchArea } from '@udonarium/game-table-mask';
+import {
+  GameTableMask,
+  GameTableMaskScratchArea,
+  GameTableMaskScratchMode
+} from '@udonarium/game-table-mask';
 import { RoomState } from '@udonarium/room-state';
 
 type ScratchRequestKind = 'lock' | 'commit' | 'release';
@@ -18,6 +22,7 @@ interface ScratchLockRequest {
 
 interface ScratchCommitRequest extends ScratchLockRequest {
   area: GameTableMaskScratchArea;
+  mode?: GameTableMaskScratchMode;
 }
 
 interface ScratchRequestResult extends ScratchLockRequest {
@@ -196,7 +201,8 @@ export class GameTableMaskScratchService {
   async commit(
     maskIdentifier: string,
     token: string,
-    area: GameTableMaskScratchArea
+    area: GameTableMaskScratchArea,
+    mode: GameTableMaskScratchMode = 'reveal'
   ): Promise<ScratchRequestOutcome> {
     if (!maskIdentifier || !token) return false;
     let reservation = this.localEditReservation;
@@ -211,6 +217,7 @@ export class GameTableMaskScratchService {
       token: token,
       generation: generation,
       area: area,
+      mode: mode,
     });
     if (this.wasCommitted(maskIdentifier, token)) {
       this.clearLocalEditReservation(maskIdentifier, token);
@@ -350,6 +357,11 @@ export class GameTableMaskScratchService {
 
   private handleCommitRequest(request: ScratchCommitRequest, sendFrom: string) {
     if (!this.isCoordinator || !this.isValidRequest(request, sendFrom)) return;
+    let mode: GameTableMaskScratchMode = request.mode ?? 'reveal';
+    if (mode !== 'reveal' && mode !== 'restore') {
+      this.sendResult('commit', request, false, sendFrom);
+      return;
+    }
     if (!this.isCoordinatorReady) {
       this.sendResult('commit', request, false, sendFrom);
       return;
@@ -372,7 +384,7 @@ export class GameTableMaskScratchService {
       return;
     }
 
-    let committed = mask.commitScratchArea(request.area, request.token, request.generation);
+    let committed = mask.commitScratchArea(request.area, request.token, request.generation, mode);
     if (committed) {
       this.rememberCompletedCommit(commitKey);
       this.rememberTerminalLockToken(commitKey);

@@ -14,7 +14,11 @@ import { ImageFile } from '@udonarium/core/file-storage/image-file';
 import { EventSystem, Network } from '@udonarium/core/system';
 import { MathUtil } from '@udonarium/core/system/util/math-util';
 import { GameTableMaskScratchLock } from '@udonarium/game-table-mask-scratch-lock';
-import { GameTableMask, GameTableMaskScratchArea } from '@udonarium/game-table-mask';
+import {
+  GameTableMask,
+  GameTableMaskScratchArea,
+  GameTableMaskScratchMode
+} from '@udonarium/game-table-mask';
 import { PeerCursor } from '@udonarium/peer-cursor';
 import { PresetSound, SoundEffect } from '@udonarium/sound-effect';
 import { GameCharacterSheetComponent } from 'component/game-character-sheet/game-character-sheet.component';
@@ -100,8 +104,18 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
   }
   get scratchSelectionLabel(): string {
     let area = this.scratchSelection;
-    if (!area) return '公開する範囲をドラッグで選択';
-    return `${area.width} × ${area.height} グリッドを選択中`;
+    if (!area) {
+      return this.scratchEditMode === 'restore'
+        ? '元に戻す範囲をドラッグで選択'
+        : '公開する範囲をドラッグで選択';
+    }
+    return `${area.width} × ${area.height} グリッドを${this.scratchEditMode === 'restore' ? '復元' : '公開'}`;
+  }
+  get scratchConfirmLabel(): string {
+    if (this.isScratchCommitting) return '確定中…';
+    return this.scratchEditMode === 'restore'
+      ? '選択範囲を元に戻す'
+      : '選択範囲を公開';
   }
 
   gridSize: number = 50;
@@ -111,6 +125,7 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
   isScratchEditing: boolean = false;
   isScratchLockPending: boolean = false;
   isScratchCommitting: boolean = false;
+  scratchEditMode: GameTableMaskScratchMode = 'reveal';
 
   private input: InputHandler = null;
   private scratchLockToken: string = '';
@@ -248,9 +263,10 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
     SoundEffect.play(PresetSound.cardPut);
   }
 
-  async startScratchEditing() {
+  async startScratchEditing(mode: GameTableMaskScratchMode = 'reveal') {
     if (this.isScratchEditing || this.isScratchLockPending || this.isScratchLockedByOther) return;
 
+    this.scratchEditMode = mode;
     this.isScratchLockPending = true;
     this.changeDetector.markForCheck();
     let token = await this.scratchService.acquire(this.gameTableMask.identifier);
@@ -280,7 +296,12 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
 
     this.isScratchCommitting = true;
     this.changeDetector.markForCheck();
-    let committed = await this.scratchService.commit(this.gameTableMask.identifier, this.scratchLockToken, area);
+    let committed = await this.scratchService.commit(
+      this.gameTableMask.identifier,
+      this.scratchLockToken,
+      area,
+      this.scratchEditMode
+    );
     this.isScratchCommitting = false;
 
     if (this.isDestroyed) return;
@@ -289,7 +310,7 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
       SoundEffect.play(PresetSound.unlock);
     } else if (committed === false) {
       this.finishScratchEditing(true);
-      this.showScratchMessage('スクラッチ範囲を確定できません', '編集ロックが失われたため、選択内容は公開されていません。');
+      this.showScratchMessage('スクラッチ範囲を確定できません', '編集ロックが失われたため、選択内容は反映されていません。');
     } else {
       this.finishScratchEditing(true);
       this.showScratchMessage(
@@ -304,6 +325,12 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
     if (!this.isScratchEditing || this.isScratchCommitting) return;
     this.finishScratchEditing(true);
     SoundEffect.play(PresetSound.unlock);
+  }
+
+  setScratchEditMode(mode: GameTableMaskScratchMode) {
+    if (!this.isScratchEditing || this.isScratchCommitting) return;
+    this.scratchEditMode = mode;
+    this.changeDetector.markForCheck();
   }
 
   onScratchPointerDown(e: PointerEvent) {
@@ -441,6 +468,12 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
     }
     actions.push(ContextMenuSeparator);
     actions.push({ name: 'スクラッチで一部公開', action: () => { void this.startScratchEditing(); } });
+    if (0 < this.scratchAreas.length) {
+      actions.push({
+        name: 'スクラッチした箇所を元に戻す',
+        action: () => { void this.startScratchEditing('restore'); }
+      });
+    }
     actions.push({
       name: 'マップマスクを編集', action: () => {
         if (!this.canModifyMask()) return;
@@ -481,13 +514,13 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
       if (!this.scratchService.isPeerOnline(lock.ownerPeerId)) {
         return [{
           name: '古い編集ロックを回収してスクラッチを開始',
-          action: () => { void this.startScratchEditing(); }
+          action: () => { void this.startScratchEditing(this.scratchEditMode); }
         }];
       }
       return [{ name: `${this.scratchLockOwnerName} がスクラッチ編集中`, action: null }];
     }
     return [
-      { name: 'スクラッチ編集を再開', action: () => { void this.startScratchEditing(); } },
+      { name: 'スクラッチ編集を再開', action: () => { void this.startScratchEditing(this.scratchEditMode); } },
       {
         name: 'スクラッチ編集をキャンセル', action: () => {
           this.scratchService.release(this.gameTableMask.identifier, lock.token);
