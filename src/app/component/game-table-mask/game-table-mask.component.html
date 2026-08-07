@@ -51,10 +51,25 @@
     (touchend)="suppressScratchGesture($event)"
     (touchcancel)="suppressScratchGesture($event)"
     (contextmenu)="suppressScratchContextMenu($event)">
+    <div class="scratch-cell-states" aria-hidden="true">
+      <div *ngFor="let cell of scratchGridCells" class="scratch-cell-state"
+        [class.is-revealed]="cell.isRevealed"
+        [style.left.px]="cell.x * gridSize" [style.top.px]="cell.y * gridSize"
+        [style.width.px]="gridSize" [style.height.px]="gridSize">
+        <span class="scratch-cell-state-marker">
+          <i class="material-icons">{{cell.isRevealed ? 'visibility' : 'visibility_off'}}</i>
+        </span>
+      </div>
+    </div>
     <div *ngIf="scratchSelection as area" class="scratch-selection"
       [ngClass]="{'is-restore': scratchEditMode === 'restore'}"
       [style.left.px]="area.x * gridSize" [style.top.px]="area.y * gridSize"
       [style.width.px]="area.width * gridSize" [style.height.px]="area.height * gridSize"></div>
+  </div>
+
+  <div *ngIf="isScratchEditing" class="scratch-state-legend" aria-label="グリッドの公開状態">
+    <span><i class="material-icons" aria-hidden="true">visibility_off</i>未公開</span>
+    <span class="is-revealed"><i class="material-icons" aria-hidden="true">visibility</i>公開済み</span>
   </div>
 
   <div *ngIf="isScratchEditing" class="scratch-toolbar"
@@ -67,13 +82,26 @@
     (touchend)="suppressScratchGesture($event)"
     (touchcancel)="suppressScratchGesture($event)"
     (contextmenu)="suppressScratchContextMenu($event)">
-    <div class="scratch-mode-switch" role="group" aria-label="スクラッチ編集モード">
-      <button type="button" [class.is-active]="scratchEditMode === 'reveal'"
+    <span class="scratch-mode-label">編集モード</span>
+    <div class="scratch-mode-switch" role="radiogroup" aria-label="スクラッチ編集モード">
+      <button type="button" role="radio"
+        [attr.aria-checked]="scratchEditMode === 'reveal'"
+        [class.is-active]="scratchEditMode === 'reveal'"
         [disabled]="isScratchCommitting"
-        (click)="setScratchEditMode('reveal'); $event.stopPropagation()">公開</button>
-      <button type="button" [class.is-active]="scratchEditMode === 'restore'"
+        (click)="setScratchEditMode('reveal'); $event.stopPropagation()">
+        <i class="material-icons mode-icon" aria-hidden="true">visibility</i>
+        <span>公開</span>
+        <i class="material-icons mode-check" aria-hidden="true">check</i>
+      </button>
+      <button type="button" role="radio"
+        [attr.aria-checked]="scratchEditMode === 'restore'"
+        [class.is-active]="scratchEditMode === 'restore'"
         [disabled]="isScratchCommitting"
-        (click)="setScratchEditMode('restore'); $event.stopPropagation()">元に戻す</button>
+        (click)="setScratchEditMode('restore'); $event.stopPropagation()">
+        <i class="material-icons mode-icon" aria-hidden="true">visibility_off</i>
+        <span>元に戻す</span>
+        <i class="material-icons mode-check" aria-hidden="true">check</i>
+      </button>
     </div>
     <span class="scratch-toolbar-label" role="status" aria-live="polite">{{scratchSelectionLabel}}</span>
     <button type="button" class="scratch-confirm-button"

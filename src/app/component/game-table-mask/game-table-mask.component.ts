@@ -34,6 +34,12 @@ import { PointerDeviceService } from 'service/pointer-device.service';
 import { TabletopActionService } from 'service/tabletop-action.service';
 import { SelectionState, TabletopSelectionService } from 'service/tabletop-selection.service';
 
+interface ScratchGridCell {
+  x: number;
+  y: number;
+  isRevealed: boolean;
+}
+
 @Component({
   selector: 'game-table-mask',
   templateUrl: './game-table-mask.component.html',
@@ -84,6 +90,28 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
   get scratchViewBox(): string { return `0 0 ${this.width} ${this.height}`; }
   get scratchColumns(): number { return Math.max(1, Math.ceil(this.width)); }
   get scratchRows(): number { return Math.max(1, Math.ceil(this.height)); }
+  get scratchGridCells(): ScratchGridCell[] {
+    let cacheKey = `${this.scratchColumns},${this.scratchRows}:${this.gameTableMask?.scratchData ?? ''}`;
+    if (cacheKey === this.scratchGridCellCacheKey) return this.scratchGridCellCache;
+
+    let areas = this.scratchAreas;
+    let cells: ScratchGridCell[] = [];
+    for (let y = 0; y < this.scratchRows; y++) {
+      for (let x = 0; x < this.scratchColumns; x++) {
+        cells.push({
+          x: x,
+          y: y,
+          isRevealed: areas.some(area =>
+            area.x <= x && x < area.x + area.width
+            && area.y <= y && y < area.y + area.height
+          ),
+        });
+      }
+    }
+    this.scratchGridCellCacheKey = cacheKey;
+    this.scratchGridCellCache = cells;
+    return cells;
+  }
 
   get selectionState(): SelectionState { return this.selectionService.state(this.gameTableMask); }
   get isSelected(): boolean { return this.selectionState !== SelectionState.NONE; }
@@ -133,6 +161,8 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
   private scratchSelectionEnd: { x: number, y: number } | null = null;
   private scratchPointerId: number | null = null;
   private isDestroyed: boolean = false;
+  private scratchGridCellCacheKey: string = '';
+  private scratchGridCellCache: ScratchGridCell[] = [];
 
   constructor(
     private ngZone: NgZone,

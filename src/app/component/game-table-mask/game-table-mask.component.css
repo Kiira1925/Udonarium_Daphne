@@ -132,10 +132,82 @@
 
 .scratch-selection {
   position: absolute;
+  z-index: 2;
   box-sizing: border-box;
   border: 2px solid hsl(200, 100%, 45%);
   background: rgba(0, 168, 255, 0.28);
   pointer-events: none;
+}
+
+.scratch-cell-states {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.scratch-cell-state {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.scratch-cell-state-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 25px;
+  height: 25px;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(35, 35, 35, 0.88);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.75);
+}
+
+.scratch-cell-state-marker .material-icons {
+  font-size: 17px;
+}
+
+.scratch-cell-state.is-revealed .scratch-cell-state-marker {
+  border-color: #e8fff4;
+  background: rgba(0, 126, 83, 0.92);
+}
+
+.scratch-state-legend {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  gap: 8px;
+  padding: 4px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 3px;
+  color: #fff;
+  background: rgba(35, 35, 35, 0.88);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
+  font-size: 11px;
+  line-height: 1;
+  pointer-events: none;
+  transform: translateX(-50%) translateZ(4px);
+}
+
+.scratch-state-legend span {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.scratch-state-legend span.is-revealed {
+  color: #b9f5d9;
+}
+
+.scratch-state-legend .material-icons {
+  font-size: 15px;
 }
 
 .scratch-selection.is-restore {
@@ -167,8 +239,19 @@
   white-space: nowrap;
 }
 
+.scratch-mode-label {
+  color: #555;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
 .scratch-mode-switch {
   display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid #9a9a9a;
+  border-radius: 5px;
+  background: #ddd5ca;
 }
 
 .scratch-mode-switch button:first-child {
@@ -176,8 +259,7 @@
 }
 
 .scratch-mode-switch button:last-child {
-  margin-left: -1px;
-  border-radius: 0 3px 3px 0;
+  border-radius: 3px;
 }
 
 .scratch-mode-switch button.is-active {
@@ -219,6 +301,67 @@
   color: #888;
   cursor: default;
   opacity: 0.7;
+}
+
+.scratch-toolbar .scratch-mode-switch button {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 28px;
+  padding: 3px 5px;
+  border-color: transparent;
+  border-radius: 3px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.scratch-toolbar .scratch-mode-switch button.is-active:first-child {
+  border-color: hsl(200, 70%, 40%);
+  color: #fff;
+  background: hsl(200, 70%, 40%);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.scratch-toolbar .scratch-mode-switch button.is-active:last-child {
+  border-color: hsl(32, 90%, 42%);
+  color: #fff;
+  background: hsl(32, 90%, 42%);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.scratch-toolbar .scratch-mode-switch button.is-active:first-child:hover:not(:disabled) {
+  background: hsl(200, 75%, 34%);
+}
+
+.scratch-toolbar .scratch-mode-switch button.is-active:last-child:hover:not(:disabled) {
+  background: hsl(32, 95%, 35%);
+}
+
+.scratch-mode-switch .mode-icon {
+  font-size: 16px;
+}
+
+.scratch-mode-switch .mode-check {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  color: transparent;
+  background: rgba(255, 255, 255, 0.24);
+  font-size: 15px;
+  line-height: 15px;
+}
+
+.scratch-mode-switch button.is-active .mode-check {
+  color: currentColor;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.scratch-mode-switch button.is-active:first-child .mode-check {
+  color: hsl(200, 70%, 34%);
+}
+
+.scratch-mode-switch button.is-active:last-child .mode-check {
+  color: hsl(32, 90%, 35%);
 }
 
 .scratch-toolbar .scratch-confirm-button {
