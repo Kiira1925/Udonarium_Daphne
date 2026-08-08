@@ -214,6 +214,11 @@
   background: rgba(0, 126, 83, 0.92);
 }
 
+.scratch-cell-state.is-unselectable .scratch-cell-state-marker {
+  opacity: 0.42;
+  filter: saturate(0.65);
+}
+
 .scratch-state-legend {
   position: absolute;
   top: calc(100% + 6px);

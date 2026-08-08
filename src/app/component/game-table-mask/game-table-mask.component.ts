@@ -121,8 +121,8 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
   get scratchSelectionLabel(): string {
     if (this.scratchSelectionCount < 1) {
       return this.scratchEditMode === 'restore'
-        ? '元に戻すマスをクリックまたはドラッグで選択'
-        : '公開するマスをクリックまたはドラッグで選択';
+        ? '公開済みのマスをクリックまたはドラッグで選択'
+        : '未公開のマスをクリックまたはドラッグで選択';
     }
     return `${this.scratchSelectionCount} マスを${this.scratchEditMode === 'restore' ? '復元' : '公開'}`;
   }
@@ -347,7 +347,10 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
 
   setScratchEditMode(mode: GameTableMaskScratchMode) {
     if (!this.isScratchEditing || this.isScratchCommitting) return;
+    if (this.scratchEditMode === mode) return;
     this.scratchEditMode = mode;
+    this.scratchSelectedCellKeys.clear();
+    this.scratchLastSelectionCell = null;
     this.changeDetector.markForCheck();
   }
 
@@ -412,6 +415,14 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
 
   isScratchCellSelected(cell: { x: number, y: number }): boolean {
     return this.scratchSelectedCellKeys.has(this.scratchCellKey(cell));
+  }
+
+  isScratchCellSelectable(cell: { x: number, y: number, isRevealed?: boolean }): boolean {
+    let isRevealed = cell.isRevealed ?? this.scratchAreas.some(area =>
+      area.x <= cell.x && cell.x < area.x + area.width
+      && area.y <= cell.y && cell.y < area.y + area.height
+    );
+    return this.scratchEditMode === 'restore' ? isRevealed : !isRevealed;
   }
 
   private makeSelectionContextMenu(): ContextMenuAction[] {
@@ -569,6 +580,7 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
   private setScratchCellSelected(cell: { x: number, y: number }, selected: boolean) {
     let key = this.scratchCellKey(cell);
     if (selected) {
+      if (!this.isScratchCellSelectable(cell)) return;
       this.scratchSelectedCellKeys.add(key);
     } else {
       this.scratchSelectedCellKeys.delete(key);
@@ -605,6 +617,7 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
   private selectedScratchAreas(): GameTableMaskScratchArea[] {
     return this.scratchGridCells
       .filter(cell => this.isScratchCellSelected(cell))
+      .filter(cell => this.isScratchCellSelectable(cell))
       .map(cell => ({ x: cell.x, y: cell.y, width: 1, height: 1 }));
   }
 

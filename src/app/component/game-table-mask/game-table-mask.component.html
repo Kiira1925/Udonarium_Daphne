@@ -55,6 +55,7 @@
       <div *ngFor="let cell of scratchGridCells" class="scratch-cell-state"
         [class.is-revealed]="cell.isRevealed"
         [class.is-selected]="isScratchCellSelected(cell)"
+        [class.is-unselectable]="!isScratchCellSelectable(cell)"
         [style.left.px]="cell.x * gridSize" [style.top.px]="cell.y * gridSize"
         [style.width.px]="gridSize" [style.height.px]="gridSize">
         <span class="scratch-cell-state-marker">
