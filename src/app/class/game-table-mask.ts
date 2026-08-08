@@ -106,15 +106,24 @@ export class GameTableMask extends TabletopObject {
   }
 
   addScratchArea(area: GameTableMaskScratchArea): boolean {
-    return this.applyScratchArea(area, 'reveal', '');
+    return this.applyScratchAreas([area], 'reveal', '');
   }
 
   restoreScratchArea(area: GameTableMaskScratchArea): boolean {
-    return this.applyScratchArea(area, 'restore', '');
+    return this.applyScratchAreas([area], 'restore', '');
   }
 
   commitScratchArea(
     area: GameTableMaskScratchArea,
+    commitToken: string,
+    expectedGeneration: number = this.scratchLockGeneration,
+    mode: GameTableMaskScratchMode = 'reveal'
+  ): boolean {
+    return this.commitScratchAreas([area], commitToken, expectedGeneration, mode);
+  }
+
+  commitScratchAreas(
+    areas: GameTableMaskScratchArea[],
     commitToken: string,
     expectedGeneration: number = this.scratchLockGeneration,
     mode: GameTableMaskScratchMode = 'reveal'
@@ -124,7 +133,7 @@ export class GameTableMask extends TabletopObject {
       || this.scratchLockGeneration !== expectedGeneration) {
       return false;
     }
-    return this.applyScratchArea(area, mode, commitToken, expectedGeneration + 1);
+    return this.applyScratchAreas(areas, mode, commitToken, expectedGeneration + 1);
   }
 
   advanceScratchLockGeneration(expectedGeneration: number): boolean {
@@ -166,22 +175,35 @@ export class GameTableMask extends TabletopObject {
     return true;
   }
 
-  private applyScratchArea(
-    area: GameTableMaskScratchArea,
+  private applyScratchAreas(
+    selectedAreas: GameTableMaskScratchArea[],
     mode: GameTableMaskScratchMode,
     commitToken: string,
     nextLockGeneration?: number
   ): boolean {
-    let normalized = GameTableMask.normalizeScratchArea(area, this.width, this.height);
-    if (!normalized || (mode !== 'reveal' && mode !== 'restore')) return false;
+    if (!Array.isArray(selectedAreas) || selectedAreas.length < 1
+      || (mode !== 'reveal' && mode !== 'restore')) return false;
+    let maxCells = Math.max(1, Math.ceil(this.width)) * Math.max(1, Math.ceil(this.height));
+    if (maxCells < selectedAreas.length) return false;
+    let normalizedAreas: GameTableMaskScratchArea[] = [];
+    for (let area of selectedAreas) {
+      let normalized = GameTableMask.normalizeScratchArea(area, this.width, this.height);
+      if (!normalized) return false;
+      normalizedAreas.push(normalized);
+    }
     if (nextLockGeneration != null
       && !GameTableMask.isValidScratchLockGeneration(nextLockGeneration)) {
       return false;
     }
 
-    let areas = mode === 'restore'
-      ? GameTableMask.subtractScratchArea(this.scratchAreas, normalized)
-      : GameTableMask.compactScratchAreas(this.scratchAreas.concat(normalized));
+    let areas = this.scratchAreas;
+    if (mode === 'restore') {
+      for (let area of normalizedAreas) {
+        areas = GameTableMask.subtractScratchArea(areas, area);
+      }
+    } else {
+      areas = GameTableMask.compactScratchAreas(areas.concat(normalizedAreas));
+    }
     let context = this.toContext();
     let syncData = context.syncData as { attributes?: Record<string, unknown> };
     context.syncData = {

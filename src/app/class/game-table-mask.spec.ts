@@ -48,6 +48,37 @@ describe('GameTableMask scratch areas', () => {
     expect(mask.scratchLockGeneration).toBe(1);
   });
 
+  it('commits non-contiguous selected cells as one operation', () => {
+    let mask = GameTableMask.create('test', 4, 4, 100);
+
+    expect(mask.commitScratchAreas([
+      { x: 0, y: 0, width: 1, height: 1 },
+      { x: 2, y: 1, width: 1, height: 1 },
+      { x: 3, y: 3, width: 1, height: 1 },
+    ], 'multi-token')).toBe(true);
+
+    expect(mask.scratchAreas).toEqual([
+      { x: 0, y: 0, width: 1, height: 1 },
+      { x: 2, y: 1, width: 1, height: 1 },
+      { x: 3, y: 3, width: 1, height: 1 },
+    ]);
+    expect(mask.scratchCommitToken).toBe('multi-token');
+    expect(mask.scratchLockGeneration).toBe(1);
+  });
+
+  it('rejects a multi-cell commit atomically when one area is invalid', () => {
+    let mask = GameTableMask.create('test', 3, 3, 100);
+
+    expect(mask.commitScratchAreas([
+      { x: 0, y: 0, width: 1, height: 1 },
+      { x: 9, y: 9, width: 1, height: 1 },
+    ], 'invalid-token')).toBe(false);
+
+    expect(mask.scratchData).toBe('');
+    expect(mask.scratchCommitToken).toBe('');
+    expect(mask.scratchLockGeneration).toBe(0);
+  });
+
   it('restores the selected cells inside a published area', () => {
     let mask = GameTableMask.create('test', 4, 4, 100);
     mask.addScratchArea({ x: 0, y: 0, width: 4, height: 4 });
@@ -59,6 +90,26 @@ describe('GameTableMask scratch areas', () => {
       { x: 3, y: 1, width: 1, height: 2 },
       { x: 0, y: 3, width: 4, height: 1 },
     ]);
+  });
+
+  it('restores non-contiguous selected cells as one operation', () => {
+    let mask = GameTableMask.create('test', 3, 3, 100);
+    mask.addScratchArea({ x: 0, y: 0, width: 3, height: 3 });
+
+    expect(mask.commitScratchAreas([
+      { x: 0, y: 0, width: 1, height: 1 },
+      { x: 2, y: 2, width: 1, height: 1 },
+    ], 'restore-multi-token', 0, 'restore')).toBe(true);
+
+    expect(mask.scratchAreas.some(area =>
+      area.x <= 0 && 0 < area.x + area.width
+      && area.y <= 0 && 0 < area.y + area.height
+    )).toBe(false);
+    expect(mask.scratchAreas.some(area =>
+      area.x <= 2 && 2 < area.x + area.width
+      && area.y <= 2 && 2 < area.y + area.height
+    )).toBe(false);
+    expect(mask.scratchCommitToken).toBe('restore-multi-token');
   });
 
   it('records a restore commit and rejects an older revealed state', () => {

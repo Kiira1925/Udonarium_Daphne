@@ -26,4 +26,24 @@ describe('GameTableMaskComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('selects and deselects arbitrary cells along pointer strokes', () => {
+    component.gameTableMask = GameTableMask.create('test', 4, 4, 1);
+    (component as any).scratchSelectionAction = 'select';
+    (component as any).scratchLastSelectionCell = { x: 0, y: 0 };
+
+    (component as any).applyScratchSelectionStroke({ x: 3, y: 0 });
+
+    expect(component.scratchSelectionCount).toBe(4);
+    expect(component.isScratchCellSelected({ x: 0, y: 0 })).toBe(true);
+    expect(component.isScratchCellSelected({ x: 3, y: 0 })).toBe(true);
+
+    (component as any).scratchSelectionAction = 'deselect';
+    (component as any).scratchLastSelectionCell = { x: 1, y: 0 };
+    (component as any).applyScratchSelectionStroke({ x: 2, y: 0 });
+
+    expect(component.scratchSelectionCount).toBe(2);
+    expect(component.isScratchCellSelected({ x: 1, y: 0 })).toBe(false);
+    expect(component.isScratchCellSelected({ x: 2, y: 0 })).toBe(false);
+  });
 });

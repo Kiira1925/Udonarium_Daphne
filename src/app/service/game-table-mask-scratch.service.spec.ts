@@ -90,6 +90,31 @@ describe('GameTableMaskScratchService arbitration', () => {
     expect(service.lockFor(mask.identifier)).toBeNull();
   });
 
+  it('commits multiple selected cells through one owner lock', () => {
+    let mask = GameTableMask.create('test', 4, 4, 100);
+    let request = lockRequest(mask, 'multi-token');
+    (service as any).handleLockRequest(request, 'peer-b');
+    request = {
+      ...request,
+      generation: service.lockFor(mask.identifier)!.generation,
+    };
+
+    (service as any).handleCommitRequest({
+      ...request,
+      areas: [
+        { x: 0, y: 0, width: 1, height: 1 },
+        { x: 3, y: 2, width: 1, height: 1 },
+      ],
+    }, 'peer-b');
+
+    expect(mask.scratchAreas).toEqual([
+      { x: 0, y: 0, width: 1, height: 1 },
+      { x: 3, y: 2, width: 1, height: 1 },
+    ]);
+    expect(mask.scratchCommitToken).toBe('multi-token');
+    expect(service.lockFor(mask.identifier)).toBeNull();
+  });
+
   it('does not let a delayed release clear a newer lock token', () => {
     let mask = GameTableMask.create('test', 4, 4, 100);
     let oldRequest = lockRequest(mask, 'old-token');

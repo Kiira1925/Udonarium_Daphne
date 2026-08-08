@@ -21,7 +21,8 @@ interface ScratchLockRequest {
 }
 
 interface ScratchCommitRequest extends ScratchLockRequest {
-  area: GameTableMaskScratchArea;
+  area?: GameTableMaskScratchArea;
+  areas?: GameTableMaskScratchArea[];
   mode?: GameTableMaskScratchMode;
 }
 
@@ -201,7 +202,7 @@ export class GameTableMaskScratchService {
   async commit(
     maskIdentifier: string,
     token: string,
-    area: GameTableMaskScratchArea,
+    areas: GameTableMaskScratchArea[],
     mode: GameTableMaskScratchMode = 'reveal'
   ): Promise<ScratchRequestOutcome> {
     if (!maskIdentifier || !token) return false;
@@ -216,7 +217,7 @@ export class GameTableMaskScratchService {
       maskIdentifier: maskIdentifier,
       token: token,
       generation: generation,
-      area: area,
+      areas: areas,
       mode: mode,
     });
     if (this.wasCommitted(maskIdentifier, token)) {
@@ -384,7 +385,10 @@ export class GameTableMaskScratchService {
       return;
     }
 
-    let committed = mask.commitScratchArea(request.area, request.token, request.generation, mode);
+    let selectedAreas = Array.isArray(request.areas)
+      ? request.areas
+      : request.area ? [request.area] : [];
+    let committed = mask.commitScratchAreas(selectedAreas, request.token, request.generation, mode);
     if (committed) {
       this.rememberCompletedCommit(commitKey);
       this.rememberTerminalLockToken(commitKey);

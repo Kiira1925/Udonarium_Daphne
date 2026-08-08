@@ -117,33 +117,20 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
   get isSelected(): boolean { return this.selectionState !== SelectionState.NONE; }
   get isMagnetic(): boolean { return this.selectionState === SelectionState.MAGNETIC; }
 
-  get scratchSelection(): GameTableMaskScratchArea | null {
-    if (!this.scratchSelectionStart || !this.scratchSelectionEnd) return null;
-    let left = Math.min(this.scratchSelectionStart.x, this.scratchSelectionEnd.x);
-    let top = Math.min(this.scratchSelectionStart.y, this.scratchSelectionEnd.y);
-    let right = Math.max(this.scratchSelectionStart.x, this.scratchSelectionEnd.x);
-    let bottom = Math.max(this.scratchSelectionStart.y, this.scratchSelectionEnd.y);
-    return {
-      x: left,
-      y: top,
-      width: right - left + 1,
-      height: bottom - top + 1,
-    };
-  }
+  get scratchSelectionCount(): number { return this.scratchSelectedCellKeys.size; }
   get scratchSelectionLabel(): string {
-    let area = this.scratchSelection;
-    if (!area) {
+    if (this.scratchSelectionCount < 1) {
       return this.scratchEditMode === 'restore'
-        ? '元に戻す範囲をドラッグで選択'
-        : '公開する範囲をドラッグで選択';
+        ? '元に戻すマスをクリックまたはドラッグで選択'
+        : '公開するマスをクリックまたはドラッグで選択';
     }
-    return `${area.width} × ${area.height} グリッドを${this.scratchEditMode === 'restore' ? '復元' : '公開'}`;
+    return `${this.scratchSelectionCount} マスを${this.scratchEditMode === 'restore' ? '復元' : '公開'}`;
   }
   get scratchConfirmLabel(): string {
     if (this.isScratchCommitting) return '確定中…';
     return this.scratchEditMode === 'restore'
-      ? '選択範囲を元に戻す'
-      : '選択範囲を公開';
+      ? `選択した${this.scratchSelectionCount}マスを元に戻す`
+      : `選択した${this.scratchSelectionCount}マスを公開`;
   }
 
   gridSize: number = 50;
@@ -157,8 +144,9 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
 
   private input: InputHandler = null;
   private scratchLockToken: string = '';
-  private scratchSelectionStart: { x: number, y: number } | null = null;
-  private scratchSelectionEnd: { x: number, y: number } | null = null;
+  private scratchSelectedCellKeys: Set<string> = new Set();
+  private scratchSelectionAction: 'select' | 'deselect' = 'select';
+  private scratchLastSelectionCell: { x: number, y: number } | null = null;
   private scratchPointerId: number | null = null;
   private isDestroyed: boolean = false;
   private scratchGridCellCacheKey: string = '';
@@ -277,7 +265,7 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
 
   @HostListener('document:keydown.enter', ['$event'])
   onEnterKey(e: KeyboardEvent) {
-    if (!this.isScratchEditing || this.isScratchCommitting || !this.scratchSelection) return;
+    if (!this.isScratchEditing || this.isScratchCommitting || this.scratchSelectionCount < 1) return;
     let target = e.target as HTMLElement;
     if (target?.closest('input, textarea, select, button, [contenteditable="true"]')) return;
     e.preventDefault();
@@ -313,23 +301,23 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
     }
 
     this.scratchLockToken = token;
-    this.scratchSelectionStart = null;
-    this.scratchSelectionEnd = null;
+    this.scratchSelectedCellKeys.clear();
+    this.scratchLastSelectionCell = null;
     this.isScratchEditing = true;
     SoundEffect.play(PresetSound.selectionStart);
     this.changeDetector.markForCheck();
   }
 
   async confirmScratchEditing() {
-    let area = this.scratchSelection;
-    if (!area || !this.isScratchEditing || this.isScratchCommitting) return;
+    let areas = this.selectedScratchAreas();
+    if (areas.length < 1 || !this.isScratchEditing || this.isScratchCommitting) return;
 
     this.isScratchCommitting = true;
     this.changeDetector.markForCheck();
     let committed = await this.scratchService.commit(
       this.gameTableMask.identifier,
       this.scratchLockToken,
-      area,
+      areas,
       this.scratchEditMode
     );
     this.isScratchCommitting = false;
@@ -373,16 +361,17 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
     element.setPointerCapture(e.pointerId);
     let cell = this.scratchCellAt(e, element);
     this.scratchPointerId = e.pointerId;
-    this.scratchSelectionStart = cell;
-    this.scratchSelectionEnd = cell;
+    this.scratchSelectionAction = this.isScratchCellSelected(cell) ? 'deselect' : 'select';
+    this.scratchLastSelectionCell = cell;
+    this.setScratchCellSelected(cell, this.scratchSelectionAction === 'select');
     this.changeDetector.markForCheck();
   }
 
   onScratchPointerMove(e: PointerEvent) {
     e.stopPropagation();
-    if (this.scratchPointerId !== e.pointerId || !this.scratchSelectionStart) return;
+    if (this.scratchPointerId !== e.pointerId || !this.scratchLastSelectionCell) return;
     e.preventDefault();
-    this.scratchSelectionEnd = this.scratchCellAt(e, e.currentTarget as HTMLElement);
+    this.applyScratchSelectionStroke(this.scratchCellAt(e, e.currentTarget as HTMLElement));
     this.changeDetector.markForCheck();
   }
 
@@ -391,8 +380,9 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
     if (this.scratchPointerId !== e.pointerId) return;
     e.preventDefault();
 
-    this.scratchSelectionEnd = this.scratchCellAt(e, e.currentTarget as HTMLElement);
+    this.applyScratchSelectionStroke(this.scratchCellAt(e, e.currentTarget as HTMLElement));
     this.scratchPointerId = null;
+    this.scratchLastSelectionCell = null;
     let element = e.currentTarget as HTMLElement;
     if (element.hasPointerCapture(e.pointerId)) element.releasePointerCapture(e.pointerId);
     this.changeDetector.markForCheck();
@@ -404,6 +394,7 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
     e.preventDefault();
 
     this.scratchPointerId = null;
+    this.scratchLastSelectionCell = null;
     let element = e.currentTarget as HTMLElement;
     if (element.hasPointerCapture(e.pointerId)) element.releasePointerCapture(e.pointerId);
     this.changeDetector.markForCheck();
@@ -417,6 +408,10 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
   suppressScratchGesture(e: Event) {
     e.stopPropagation();
     if (e.cancelable) e.preventDefault();
+  }
+
+  isScratchCellSelected(cell: { x: number, y: number }): boolean {
+    return this.scratchSelectedCellKeys.has(this.scratchCellKey(cell));
   }
 
   private makeSelectionContextMenu(): ContextMenuAction[] {
@@ -567,11 +562,57 @@ export class GameTableMaskComponent implements OnChanges, OnDestroy, AfterViewIn
     };
   }
 
+  private scratchCellKey(cell: { x: number, y: number }): string {
+    return `${cell.x},${cell.y}`;
+  }
+
+  private setScratchCellSelected(cell: { x: number, y: number }, selected: boolean) {
+    let key = this.scratchCellKey(cell);
+    if (selected) {
+      this.scratchSelectedCellKeys.add(key);
+    } else {
+      this.scratchSelectedCellKeys.delete(key);
+    }
+  }
+
+  private applyScratchSelectionStroke(cell: { x: number, y: number }) {
+    let start = this.scratchLastSelectionCell ?? cell;
+    let x = start.x;
+    let y = start.y;
+    let deltaX = Math.abs(cell.x - x);
+    let deltaY = Math.abs(cell.y - y);
+    let stepX = x < cell.x ? 1 : -1;
+    let stepY = y < cell.y ? 1 : -1;
+    let error = deltaX - deltaY;
+    let selected = this.scratchSelectionAction === 'select';
+
+    while (true) {
+      this.setScratchCellSelected({ x: x, y: y }, selected);
+      if (x === cell.x && y === cell.y) break;
+      let doubleError = error * 2;
+      if (-deltaY < doubleError) {
+        error -= deltaY;
+        x += stepX;
+      }
+      if (doubleError < deltaX) {
+        error += deltaX;
+        y += stepY;
+      }
+    }
+    this.scratchLastSelectionCell = cell;
+  }
+
+  private selectedScratchAreas(): GameTableMaskScratchArea[] {
+    return this.scratchGridCells
+      .filter(cell => this.isScratchCellSelected(cell))
+      .map(cell => ({ x: cell.x, y: cell.y, width: 1, height: 1 }));
+  }
+
   private finishScratchEditing(releaseLock: boolean) {
     let token = this.scratchLockToken;
     this.scratchLockToken = '';
-    this.scratchSelectionStart = null;
-    this.scratchSelectionEnd = null;
+    this.scratchSelectedCellKeys.clear();
+    this.scratchLastSelectionCell = null;
     this.scratchPointerId = null;
     this.isScratchEditing = false;
     this.isScratchCommitting = false;
