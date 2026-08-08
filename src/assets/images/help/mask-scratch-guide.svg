@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="260" viewBox="0 0 760 260">
+  <title>マップマスクのスクラッチ操作例</title>
+  <desc>横3マス縦2マスを選択し、確定後にその6マスだけ公開される様子</desc>
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8f5ef"/>
+      <stop offset="1" stop-color="#eee5da"/>
+    </linearGradient>
+    <linearGradient id="map" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a9c87a"/>
+      <stop offset="0.48" stop-color="#6f9d65"/>
+      <stop offset="1" stop-color="#315d55"/>
+    </linearGradient>
+    <pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+      <path d="M50 0H0V50" fill="none" stroke="#263a35" stroke-width="1" stroke-opacity=".55"/>
+    </pattern>
+    <clipPath id="left-panel">
+      <rect width="300" height="180" rx="10"/>
+    </clipPath>
+    <clipPath id="right-panel">
+      <rect width="300" height="180" rx="10"/>
+    </clipPath>
+    <mask id="opened-cells" maskUnits="userSpaceOnUse" x="0" y="0" width="300" height="180">
+      <rect width="300" height="180" fill="white"/>
+      <rect x="100" y="50" width="150" height="100" fill="black"/>
+    </mask>
+    <filter id="shadow" x="-15%" y="-20%" width="130%" height="150%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#46392e" flood-opacity=".2"/>
+    </filter>
+  </defs>
+
+  <rect width="760" height="260" rx="12" fill="url(#paper)"/>
+
+  <g transform="translate(25 50)" filter="url(#shadow)">
+    <g clip-path="url(#left-panel)">
+      <rect width="300" height="180" fill="url(#map)"/>
+      <path d="M-10 150C42 104 66 123 112 73S218 32 320 58" fill="none" stroke="#d7c68f" stroke-width="23" stroke-opacity=".5"/>
+      <circle cx="47" cy="41" r="30" fill="#4a8057" opacity=".8"/>
+      <circle cx="270" cy="142" r="48" fill="#234f49" opacity=".7"/>
+      <rect width="300" height="180" fill="#19252b" opacity=".68"/>
+      <rect width="300" height="180" fill="url(#grid)"/>
+      <rect x="100" y="50" width="150" height="100" rx="3" fill="#46bde1" fill-opacity=".38" stroke="#c7f5ff" stroke-width="3"/>
+      <path d="M100 86h150M150 50v100M200 50v100" fill="none" stroke="#d7f8ff" stroke-width="1.5" stroke-opacity=".8"/>
+      <circle cx="100" cy="50" r="5" fill="#fff" stroke="#328aaa" stroke-width="2"/>
+      <circle cx="250" cy="150" r="5" fill="#fff" stroke="#328aaa" stroke-width="2"/>
+    </g>
+    <rect width="300" height="180" rx="10" fill="none" stroke="#766759" stroke-width="2"/>
+  </g>
+
+  <g transform="translate(435 50)" filter="url(#shadow)">
+    <g clip-path="url(#right-panel)">
+      <rect width="300" height="180" fill="url(#map)"/>
+      <path d="M-10 150C42 104 66 123 112 73S218 32 320 58" fill="none" stroke="#d7c68f" stroke-width="23" stroke-opacity=".5"/>
+      <circle cx="47" cy="41" r="30" fill="#4a8057" opacity=".8"/>
+      <circle cx="270" cy="142" r="48" fill="#234f49" opacity=".7"/>
+      <rect width="300" height="180" fill="#19252b" opacity=".76" mask="url(#opened-cells)"/>
+      <rect width="300" height="180" fill="url(#grid)"/>
+      <rect x="100" y="50" width="150" height="100" rx="3" fill="none" stroke="#f6c35b" stroke-width="3"/>
+      <path d="M100 100h150M150 50v100M200 50v100" fill="none" stroke="#f9e2a9" stroke-width="1.5" stroke-opacity=".9"/>
+    </g>
+    <rect width="300" height="180" rx="10" fill="none" stroke="#766759" stroke-width="2"/>
+  </g>
+
+  <g fill="#42382f" font-family="sans-serif" font-weight="700" text-anchor="middle">
+    <text x="175" y="33" font-size="16">選択中</text>
+    <text x="585" y="33" font-size="16">公開後</text>
+  </g>
+
+  <g transform="translate(349 112)" fill="none" stroke="#65574a" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 18h47" stroke-width="5"/>
+    <path d="m35 5 13 13-13 13" stroke-width="5"/>
+  </g>
+
+  <g font-family="sans-serif" font-size="12" text-anchor="middle">
+    <rect x="111" y="207" width="128" height="28" rx="14" fill="#d8f4fb" stroke="#328aaa"/>
+    <text x="175" y="225" fill="#245b70">横3 × 縦2マスを選択</text>
+    <rect x="522" y="207" width="126" height="28" rx="14" fill="#fff0c9" stroke="#b57921"/>
+    <text x="585" y="225" fill="#755018">6マスだけ公開</text>
+  </g>
+</svg>

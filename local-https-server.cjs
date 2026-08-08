@@ -27,6 +27,7 @@ const mime = {
   '.json': 'application/json',
   '.map': 'application/json',
   '.png': 'image/png',
+  '.svg': 'image/svg+xml; charset=utf-8',
   '.yaml': 'text/yaml; charset=utf-8',
   '.yml': 'text/yaml; charset=utf-8',
 };
