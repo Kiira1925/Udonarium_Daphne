@@ -24,6 +24,10 @@ export class SynchronizeTask {
 
   private constructor(readonly peerId: PeerId) { }
 
+  hasRequest(identifier: ObjectIdentifier): boolean {
+    return this.requestMap.has(identifier);
+  }
+
   static create(peerId: PeerId, requests: SynchronizeRequest[]): SynchronizeTask {
     if (SynchronizeTask.tasksMap.size < 1) {
       EventSystem.register(SynchronizeTask.key)

@@ -13,6 +13,7 @@ import { RoomState } from '@udonarium/room-state';
 
 type ScratchRequestKind = 'lock' | 'commit' | 'release';
 type ScratchRequestOutcome = boolean | null;
+type ScratchRequestResponse = ScratchRequestOutcome | 'retry';
 
 interface ScratchLockRequest {
   maskIdentifier: string;
@@ -29,11 +30,12 @@ interface ScratchCommitRequest extends ScratchLockRequest {
 interface ScratchRequestResult extends ScratchLockRequest {
   kind: ScratchRequestKind;
   granted: boolean;
+  retryable?: boolean;
 }
 
 interface PendingScratchRequest {
   coordinatorPeerId: string;
-  resolve: (outcome: ScratchRequestOutcome) => void;
+  resolve: (outcome: ScratchRequestResponse) => void;
   timeout: ReturnType<typeof setTimeout>;
 }
 
@@ -48,6 +50,8 @@ const lockRequestEvent = 'REQUEST_GAME_TABLE_MASK_SCRATCH_LOCK';
 const commitRequestEvent = 'REQUEST_GAME_TABLE_MASK_SCRATCH_COMMIT';
 const releaseRequestEvent = 'REQUEST_GAME_TABLE_MASK_SCRATCH_RELEASE';
 const requestResultEvent = 'RESULT_GAME_TABLE_MASK_SCRATCH_REQUEST';
+const coordinatorRetryInterval = 250;
+const coordinatorRetryTimeout = 32 * 1000;
 
 @Injectable({
   providedIn: 'root'
@@ -174,7 +178,7 @@ export class GameTableMaskScratchService {
       token: token,
       generation: generation,
     };
-    let outcome = await this.sendRequest('lock', lockRequestEvent, {
+    let outcome = await this.sendRequestWithRetry('lock', lockRequestEvent, {
       maskIdentifier: maskIdentifier,
       token: token,
       generation: generation,
@@ -213,7 +217,7 @@ export class GameTableMaskScratchService {
       : lock?.isOwnedBy(Network.peerId, token) ? lock.generation : -1;
     if (!GameTableMask.isValidScratchLockGeneration(generation)) return false;
 
-    let outcome = await this.sendRequest('commit', commitRequestEvent, {
+    let outcome = await this.sendRequestWithRetry('commit', commitRequestEvent, {
       maskIdentifier: maskIdentifier,
       token: token,
       generation: generation,
@@ -267,7 +271,7 @@ export class GameTableMaskScratchService {
     kind: ScratchRequestKind,
     eventName: string,
     data: ScratchLockRequest | ScratchCommitRequest
-  ): Promise<ScratchRequestOutcome> {
+  ): Promise<ScratchRequestResponse> {
     let key = this.pendingKey(kind, data.maskIdentifier, data.token);
     let existing = this.pendingRequests.get(key);
     if (existing) {
@@ -279,7 +283,7 @@ export class GameTableMaskScratchService {
     let coordinatorPeerId = this.coordinatorPeerId;
     if (!coordinatorPeerId) return Promise.resolve(null);
 
-    return new Promise<ScratchRequestOutcome>(resolve => {
+    return new Promise<ScratchRequestResponse>(resolve => {
       let timeout = setTimeout(() => {
         let pending = this.pendingRequests.get(key);
         if (!pending) return;
@@ -295,10 +299,25 @@ export class GameTableMaskScratchService {
     });
   }
 
+  private async sendRequestWithRetry(
+    kind: ScratchRequestKind,
+    eventName: string,
+    data: ScratchLockRequest | ScratchCommitRequest,
+    timeoutMs: number = coordinatorRetryTimeout
+  ): Promise<ScratchRequestOutcome> {
+    let startedAt = performance.now();
+    while (true) {
+      let outcome = await this.sendRequest(kind, eventName, data);
+      if (outcome !== 'retry') return outcome;
+      if (timeoutMs <= performance.now() - startedAt) return null;
+      await new Promise(resolve => setTimeout(resolve, coordinatorRetryInterval));
+    }
+  }
+
   private handleLockRequest(request: ScratchLockRequest, sendFrom: string) {
     if (!this.isCoordinator || !this.isValidRequest(request, sendFrom)) return;
-    if (!this.isCoordinatorReady) {
-      this.sendResult('lock', request, false, sendFrom);
+    if (!this.isCoordinatorReadyFor(request.maskIdentifier)) {
+      this.sendResult('lock', request, false, sendFrom, true);
       return;
     }
 
@@ -363,8 +382,8 @@ export class GameTableMaskScratchService {
       this.sendResult('commit', request, false, sendFrom);
       return;
     }
-    if (!this.isCoordinatorReady) {
-      this.sendResult('commit', request, false, sendFrom);
+    if (!this.isCoordinatorReadyFor(request.maskIdentifier)) {
+      this.sendResult('commit', request, false, sendFrom, true);
       return;
     }
 
@@ -399,7 +418,7 @@ export class GameTableMaskScratchService {
 
   private handleReleaseRequest(request: ScratchLockRequest, sendFrom: string) {
     if (!this.isCoordinator || !this.isValidRequest(request, sendFrom)) return;
-    if (!this.isCoordinatorReady) return;
+    if (!this.isCoordinatorReadyFor(request.maskIdentifier)) return;
     this.rememberTerminalLockToken(this.completedCommitKey(request.maskIdentifier, request.token));
     let lock = this.getOrCreateLock(request.maskIdentifier);
     let mask = ObjectStore.instance.get<GameTableMask>(request.maskIdentifier);
@@ -438,7 +457,7 @@ export class GameTableMaskScratchService {
 
     clearTimeout(pending.timeout);
     this.pendingRequests.delete(key);
-    pending.resolve(result.granted);
+    pending.resolve(result.retryable ? 'retry' : result.granted);
   }
 
   private resetScratchStateForRoomLoad() {
@@ -646,13 +665,20 @@ export class GameTableMaskScratchService {
       || Network.peers.some(peer => peer.peerId === peerId && peer.isOpen);
   }
 
-  private sendResult(kind: ScratchRequestKind, request: ScratchLockRequest, granted: boolean, sendTo: string) {
+  private sendResult(
+    kind: ScratchRequestKind,
+    request: ScratchLockRequest,
+    granted: boolean,
+    sendTo: string,
+    retryable: boolean = false
+  ) {
     EventSystem.call<ScratchRequestResult, string>(requestResultEvent, {
       kind: kind,
       maskIdentifier: request.maskIdentifier,
       token: request.token,
       generation: request.generation,
       granted: granted,
+      retryable: retryable,
     }, sendTo);
   }
 
@@ -682,9 +708,14 @@ export class GameTableMaskScratchService {
     );
   }
 
-  private get isCoordinatorReady(): boolean {
-    return this.coordinatorReadyAfter <= performance.now()
-      && !ObjectSynchronizer.instance.hasActiveSynchronizationTasks;
+  private isCoordinatorReadyFor(maskIdentifier: string): boolean {
+    if (performance.now() < this.coordinatorReadyAfter) return false;
+    let synchronizer = ObjectSynchronizer.instance;
+    // 無関係なオブジェクトの同期は最大30秒残り得るため、対象のマスクとロックだけを待つ。
+    return !synchronizer.hasActiveSynchronizationTaskFor(maskIdentifier)
+      && !synchronizer.hasActiveSynchronizationTaskFor(
+        GameTableMaskScratchLock.identifierFor(maskIdentifier)
+      );
   }
 
   private get coordinatorPeerId(): string {
