@@ -4,8 +4,12 @@
   <div class="title">
     <div class="title-text">{{panelService.title}}</div>
     <div class="title-button" *ngIf="showTitleButtons">
-      <button (click)="toggleFullScreen()"><i class="material-icons" style="font-size: 14px;">fullscreen</i></button>
-      <button (click)="close()"><i class="material-icons" style="font-size: 14px;">close</i></button>
+      <button type="button" title="全画面表示を切り替える" aria-label="全画面表示を切り替える" (click)="toggleFullScreen()">
+        <i class="material-icons" aria-hidden="true" style="font-size: 14px;">fullscreen</i>
+      </button>
+      <button type="button" title="閉じる" aria-label="パネルを閉じる" (click)="close()">
+        <i class="material-icons" aria-hidden="true" style="font-size: 14px;">close</i>
+      </button>
     </div>
   </div>
   <div class="scrollable-panel" #scrollablePanel>

@@ -1,5 +1,8 @@
 import { Injectable } from '@angular/core';
+import { ObjectStore } from '@udonarium/core/synchronize-object/object-store';
 import { EventSystem } from '@udonarium/core/system';
+import { GameTableMaskScratchLock } from '@udonarium/game-table-mask-scratch-lock';
+import { GameTableMask } from '@udonarium/game-table-mask';
 import { TabletopObject } from '@udonarium/tabletop-object';
 import { MovableSelectionSynchronizer } from 'directive/movable-selection-synchronizer';
 
@@ -63,7 +66,14 @@ export class TabletopSelectionService {
   }
 
   congregate(center: PointerCoordinate) {
-    MovableSelectionSynchronizer.congregate(center, this.objects);
+    let targets = this.objects.filter(object => {
+      if (!(object instanceof GameTableMask)) return true;
+      let lock = ObjectStore.instance.get<GameTableMaskScratchLock>(
+        GameTableMaskScratchLock.identifierFor(object.identifier)
+      );
+      return !lock?.isActive || lock.generation < object.scratchLockGeneration;
+    });
+    MovableSelectionSynchronizer.congregate(center, targets);
   }
 
   private updateHighlight(prevs: TabletopObject[] = []) {

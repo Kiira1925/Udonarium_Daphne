@@ -63,8 +63,21 @@
   background: none;
   border: none;
   border-radius: 0;
-  outline: none;
   color: #CCC;
+  cursor: pointer;
+  height: 25px;
+  min-width: 28px;
+  padding: 0 6px;
+}
+
+.title button:hover {
+  background: #6c6c6c;
+  color: #fff;
+}
+
+.title button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -3px;
 }
 
 .pointer-events-none {

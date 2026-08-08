@@ -1,192 +1,519 @@
 <div class="component">
-  <nav class="help-tabs">
-    <button [class.active]="selectedTab === 'basic'" (click)="selectedTab = 'basic'">基本操作</button>
-    <button [class.active]="selectedTab === 'commands'" (click)="selectedTab = 'commands'">チャットコマンド</button>
-    <button [class.active]="selectedTab === 'effects'" (click)="selectedTab = 'effects'">バフ/ラウンド</button>
-    <button [class.active]="selectedTab === 'gm'" (click)="selectedTab = 'gm'">GM/秘匿</button>
+  <header class="help-hero">
+    <div class="help-hero-icon" aria-hidden="true">
+      <i class="material-icons">auto_stories</i>
+    </div>
+    <div>
+      <p class="eyebrow">Daphne 機能ガイド</p>
+      <h1>やりたいことから探せるヘルプ</h1>
+      <p>追加機能を中心に、操作手順・コマンド書式・実行例をまとめています。従来のテーブル操作は、メインチャットの初期チュートリアルも参照してください。</p>
+    </div>
+  </header>
+
+  <div class="help-search-panel">
+    <label [for]="'help-search-' + instanceId">ヘルプ内を検索</label>
+    <div class="help-search">
+      <i class="material-icons" aria-hidden="true">search</i>
+      <input
+        type="search"
+        [id]="'help-search-' + instanceId"
+        [value]="searchQuery"
+        (input)="onSearchInput($event)"
+        [attr.aria-describedby]="'help-search-hint-' + instanceId"
+        placeholder="例: HP、防護、ZIP、スクラッチ">
+      <button type="button" *ngIf="searchQuery" (click)="clearSearch()" aria-label="検索語を消去">
+        <i class="material-icons" aria-hidden="true">close</i>
+      </button>
+    </div>
+    <p [id]="'help-search-hint-' + instanceId">すべてのタブから、見出し・本文・コマンドを検索します。</p>
+  </div>
+
+  <div class="search-results" *ngIf="searchQuery">
+    <div class="search-result-heading" role="status" aria-live="polite" aria-atomic="true">
+      <strong>{{searchResults.length}}件</strong>
+      <span>の項目が見つかりました</span>
+    </div>
+    <ul *ngIf="0 < searchResults.length">
+      <li *ngFor="let result of searchResults; trackBy: trackBySearchResult">
+        <button type="button" (click)="openTopic(result.tab, result.topicId)">
+          <span class="result-tab">{{result.tabLabel}}</span>
+          <strong>{{result.title}}</strong>
+          <span>{{result.summary}}</span>
+          <i class="material-icons" aria-hidden="true">arrow_forward</i>
+        </button>
+      </li>
+    </ul>
+    <p class="no-results" *ngIf="searchResults.length < 1">別の言葉や、短い単語で検索してください。</p>
+  </div>
+
+  <nav class="help-tabs" role="tablist" aria-label="ヘルプのカテゴリ">
+    <button
+      #helpTabButton
+      type="button"
+      role="tab"
+      *ngFor="let tab of tabs; let index = index; trackBy: trackByTab"
+      [class.active]="selectedTab === tab.id"
+      [id]="tabButtonId(tab.id)"
+      [attr.aria-controls]="tabPanelId(tab.id)"
+      [attr.aria-selected]="selectedTab === tab.id"
+      [tabIndex]="selectedTab === tab.id ? 0 : -1"
+      (click)="selectTab(tab.id)"
+      (keydown)="onTabKeydown($event, index)">
+      <i class="material-icons" aria-hidden="true">{{tab.icon}}</i>
+      <span>{{tab.label}}</span>
+    </button>
   </nav>
 
-  <section *ngIf="selectedTab === 'basic'">
-    <h2>コマ選択</h2>
-    <dl>
-      <dt>Ctrl + 左クリック</dt>
-      <dd>コマの選択と選択解除を切り替えます。選択中のコマの上部には矢印アイコンが表示されます。</dd>
-      <dt>範囲選択</dt>
-      <dd>テーブル上をドラッグすると、範囲内のオブジェクトをまとめて選択できます。</dd>
-      <dt>選択中コマへの付与</dt>
-      <dd>バフ、デバフ、テンプレートは現在選択されているコマへ付与されます。効果管理画面のテンプレート付与では、未選択時に使用コマへ付与されます。</dd>
-      <dt>行動完了</dt>
-      <dd>ラウンド中はキャラクターのチャットパレット、またはキャラコマの右クリックメニューから行動完了を切り替えられます。名前横には常に行動状態アイコンが表示され、未行動はグレー、完了済みはチェックマークになります。完了時はメインチャットにログが流れます。</dd>
-      <dt>同期状態</dt>
-      <dd>バフ、テンプレート、行動完了は項目ごとに同期されます。右上にオレンジ色の <code>sync!</code> が継続表示される場合は通信遅延の可能性があります。接続情報パネルで該当参加者のPingとHealthを確認してください。</dd>
-    </dl>
+  <section
+    class="help-panel"
+    role="tabpanel"
+    [id]="tabPanelId('basic')"
+    [attr.aria-labelledby]="tabButtonId('basic')"
+    [hidden]="selectedTab !== 'basic'">
+    <div class="panel-intro">
+      <strong>まずここから</strong>
+      <p>コマの選択、キャラクターの持ち運び、同期状態、マップマスクの部分公開を確認できます。</p>
+    </div>
+    <nav class="topic-nav" aria-label="基本操作の見出し">
+      <span>このタブ:</span>
+      <button type="button" (click)="openTopic('basic', 'selection')">コマの選択と行動</button>
+      <button type="button" (click)="openTopic('basic', 'files')">キャラクターとZIP</button>
+      <button type="button" (click)="openTopic('basic', 'scratch')">マスクのスクラッチ</button>
+      <button type="button" (click)="openTopic('basic', 'connection')">接続と同期</button>
+    </nav>
 
-    <h2>パネルとファイル</h2>
-    <dl>
-      <dt>キャラコマの詳細</dt>
-      <dd>コマを右クリックして詳細を開きます。キャラクターシートでは画像、ステータス、チャットパレットなどを編集できます。</dd>
-      <dt>キャラコマの効果管理</dt>
-      <dd>コマを右クリックし、チャットパレット表示の下にある「効果管理を開く」から、そのキャラを選択した状態で効果管理を開けます。</dd>
-      <dt>zip読み込み</dt>
-      <dd>保存済みzipはブラウザ画面へドロップして読み込みます。GMモード中にzip形式のキャラを追加した場合も、詳細表示やチャットパレットは通常通り開けます。</dd>
-      <dt>キャラzip保存</dt>
-      <dd>キャラコマをzip保存すると、そのキャラに登録されたバフ/デバフテンプレートと付与中効果も一緒に保存されます。読み込み時は新しいキャラへ紐づけ直されます。</dd>
-      <dt>外部公開</dt>
-      <dd>公開用バッチを起動した場合、cloudflared が表示する <code>https://*.trycloudflare.com/</code> のURLを共有します。</dd>
-    </dl>
+    <article
+      #helpTopic
+      class="help-topic"
+      data-help-tab="basic"
+      data-help-topic="selection"
+      data-title="コマの選択と行動"
+      data-summary="個別選択、範囲選択、行動完了の操作"
+      data-keywords="Ctrl Shift 左クリック ドラッグ タッチ 長押し 選択解除">
+      <h2 tabindex="-1">コマの選択と行動</h2>
+      <p class="topic-lead">複数のコマを選ぶと、移動やバフ付与などをまとめて操作できます。</p>
+      <dl class="term-list">
+        <dt><kbd>Ctrl</kbd> + <kbd>左クリック</kbd></dt>
+        <dd>クリックしたコマの選択と選択解除を切り替えます。選択中のコマには、名前の上に矢印アイコンが表示されます。</dd>
+        <dt><kbd>Shift</kbd> + <kbd>左ドラッグ</kbd></dt>
+        <dd>PCでは、テーブルの空き部分をドラッグして矩形内のオブジェクトをまとめて選択します。</dd>
+        <dt>長押ししてからドラッグ</dt>
+        <dd>タッチ操作では、テーブルの空き部分を長押しし、選択表示が出てからドラッグします。</dd>
+        <dt>選択中コマへの付与</dt>
+        <dd>バフ・デバフは選択中のコマへ付与されます。何も選択していない場合は、チャットの送信元または効果管理の「使用コマ」が対象になります。</dd>
+        <dt>行動完了</dt>
+        <dd>ラウンド1以上の間は、キャラクターのチャットパレットまたはキャラコマの右クリックメニューから切り替えられます。未行動はグレー、完了済みはチェックで表示され、完了時はメインチャットへ記録されます。</dd>
+      </dl>
+      <aside class="callout tip">
+        <i class="material-icons" aria-hidden="true">lightbulb</i>
+        <div><strong>選択をすべて解除する</strong><span>テーブルの空き部分を短くクリックします。</span></div>
+      </aside>
+    </article>
+
+    <article
+      #helpTopic
+      class="help-topic"
+      data-help-tab="basic"
+      data-help-topic="files"
+      data-title="キャラクターとZIP"
+      data-summary="詳細画面、効果管理、キャラクターの保存と読み込み"
+      data-keywords="キャラコマ キャラクターシート 詳細 効果管理 ZIP zip 保存 読み込み チャットパレット テンプレート">
+      <h2 tabindex="-1">キャラクターとZIP</h2>
+      <p class="topic-lead">キャラコマの情報は右クリックから編集し、ZIPファイルで持ち運べます。</p>
+      <dl class="term-list">
+        <dt>キャラクターの詳細</dt>
+        <dd>キャラコマを右クリックして「詳細を表示」を選びます。画像、ステータス、チャットパレットなどを編集できます。</dd>
+        <dt>そのキャラの効果管理</dt>
+        <dd>キャラコマを右クリックし、チャットパレット表示の下にある「効果管理を開く」を選ぶと、そのキャラを「使用コマ」にした状態で開きます。</dd>
+        <dt>ZIPを読み込む</dt>
+        <dd>保存済みのZIPファイルをブラウザ画面へドロップします。GMモード中に追加したキャラも、詳細やチャットパレットを通常どおり開けます。</dd>
+        <dt>キャラコマをZIP保存する</dt>
+        <dd>キャラコマを右クリックし、「詳細を表示」→「保存」を選びます。画像、ステータス、チャットパレットは保存されます。付与中の効果と、効果管理画面で作成したテンプレートは保存されません。</dd>
+      </dl>
+      <aside class="callout info">
+        <i class="material-icons" aria-hidden="true">inventory_2</i>
+        <div>
+          <strong>テンプレートも持ち運ぶには</strong>
+          <span>効果管理の「全テンプレートをコピー」で得た定義行をチャットパレットへ登録してからZIP保存します。キャラZIP読込時に <code>/buff 効果名/効果/ラウンド</code> 形式の行から自動登録され、<code>/buff テンプレート名</code> のような呼び出し行だけでは登録されません。</span>
+        </div>
+      </aside>
+      <p class="sub-note">コピー形式では、テンプレート名・ステータス名・自由記述に半角 <code>/</code> を使用できません。自由記述の半角 <code>;</code> も複数効果の区切りとして扱われます。</p>
+    </article>
+
+    <article
+      #helpTopic
+      class="help-topic"
+      data-help-tab="basic"
+      data-help-topic="scratch"
+      data-title="マップマスクのスクラッチ"
+      data-summary="マップマスクの一部をマス単位で公開・復元"
+      data-keywords="マップ マスク スクラッチ 一部公開 復元 元に戻す 透明 グリッド アイコン 編集モード トグル クリック ドラッグ 複数選択 飛び地 ロック Enter Esc キャンセル">
+      <h2 tabindex="-1">マップマスクのスクラッチ</h2>
+      <p class="topic-lead">マスク全体を外さず、クリックやドラッグで選んだ任意のマスを公開したり、公開箇所を元に戻したりできます。</p>
+      <ol class="step-list">
+        <li>
+          <strong>編集を始める</strong>
+          <span>マップマスクを右クリックし、「スクラッチで一部公開」を選びます。編集者の画面だけでマスクが薄くなり、下のマップを確認できます。各マスの緑の目アイコンは公開済み、赤の目に斜線のアイコンは未公開を示します。</span>
+        </li>
+        <li>
+          <strong>公開するマスを選ぶ</strong>
+          <span>未公開のマスをクリックするか、ドラッグでなぞって複数選択します。公開済みのマスは選択されません。離れたマスも続けて追加でき、選択済みのマスをクリックまたはドラッグすると選択を解除できます。</span>
+        </li>
+        <li>
+          <strong>公開を確定する</strong>
+          <span>「選択した○マスを公開」を押すかEnterキーを押すと、選択したマスが透明になり全参加者へ同期されます。確定前は、他の参加者から下のマップは見えません。</span>
+        </li>
+        <li>
+          <strong>公開箇所を元に戻す</strong>
+          <span>右クリックメニューの「スクラッチした箇所を元に戻す」、または編集ツールバーの「編集モード」を「元に戻す」へ切り替え、公開済みのマスをクリックまたはドラッグで選んで確定します。未公開のマスは選択されません。チェックが付いた側が現在のモードで、モードを切り替えると選択中のマスはクリアされます。</span>
+        </li>
+      </ol>
+      <figure class="help-figure">
+        <img
+          src="assets/images/help/mask-scratch-guide.svg"
+          width="760"
+          height="260"
+          loading="lazy"
+          decoding="async"
+          alt="左はマップマスク上で隣接する6マスを選択した状態、右は確定後に選択した6マスだけ下のマップが見える状態">
+        <figcaption>クリックやドラッグで6マスを選ぶ例。確定後は、選択したマスだけが公開されます。</figcaption>
+      </figure>
+      <aside class="callout tip">
+        <i class="material-icons" aria-hidden="true">lock</i>
+        <div><strong>同時操作を防止します</strong><span>編集中のマスクはロックされ、他の参加者は移動・設定変更・削除・別のスクラッチ操作を行えません。編集者が切断した場合は自動で解除されます。</span></div>
+      </aside>
+      <p class="sub-note"><kbd>Esc</kbd> または「キャンセル」で、公開せずに編集を終了できます。</p>
+    </article>
+
+    <article
+      #helpTopic
+      class="help-topic"
+      data-help-tab="basic"
+      data-help-topic="connection"
+      data-title="接続と同期"
+      data-summary="sync!表示の確認と一時公開URLの扱い"
+      data-keywords="sync 同期遅延 接続 Ping Health cloudflared trycloudflare PUBLIC URL 外部公開">
+      <h2 tabindex="-1">接続と同期</h2>
+      <dl class="term-list">
+        <dt>オレンジ色の <code>sync!</code> が続く</dt>
+        <dd>表示にマウスを置いて対象参加者を確認し、「メニュー → 接続」でその参加者のHealthとPingを確認します。一時的な表示は通常の同期処理です。</dd>
+        <dt>ローカル環境を一時公開する</dt>
+        <dd>公開用バッチを起動し、ターミナルに表示される <code>PUBLIC URL</code>（<code>https://*.trycloudflare.com/</code>）を参加者へ共有します。</dd>
+      </dl>
+      <aside class="callout warning">
+        <i class="material-icons" aria-hidden="true">warning_amber</i>
+        <div><strong>一時公開URLは毎回変わります</strong><span>URLを知っている人はアクセスできます。セッション終了後は公開用バッチを停止し、再起動時は新しいURLだけを共有してください。</span></div>
+      </aside>
+    </article>
   </section>
 
-  <section *ngIf="selectedTab === 'commands'">
-    <h2>ステータス参照</h2>
-    <table>
-      <tr>
-        <th>書式</th>
-        <th>説明</th>
-      </tr>
-      <tr>
-        <td><code>2d6+&#123;ステータス名&#125;</code></td>
-        <td>送信元キャラのステータスを参照して判定します。対象ステータスにバフ/デバフがある場合は反映されます。</td>
-      </tr>
-    </table>
-    <p class="example-note">例: <code>2d6+&#123;筋力&#125;</code> は送信元キャラの筋力を加算します。</p>
+  <section
+    class="help-panel"
+    role="tabpanel"
+    [id]="tabPanelId('commands')"
+    [attr.aria-labelledby]="tabButtonId('commands')"
+    [hidden]="selectedTab !== 'commands'">
+    <div class="panel-intro">
+      <strong>送信元を先に確認</strong>
+      <p>メインチャットでは、入力欄の送信元にキャラコマを選びます。ステータス参照とリソース操作は送信元、バフの付与先は選択中のコマです。</p>
+      <p>キャラクターのチャットパレットでは、そのキャラを含む複数のコマを選択していると、選択中の各キャラを送信元にして同じ行を1回ずつ実行します。意図しないコスト消費を避けるには、送信元にする1体だけを選択してください。</p>
+    </div>
+    <nav class="topic-nav" aria-label="チャットコマンドの見出し">
+      <span>このタブ:</span>
+      <button type="button" (click)="openTopic('commands', 'status-reference')">ステータス参照</button>
+      <button type="button" (click)="openTopic('commands', 'resource-command')">リソース操作</button>
+    </nav>
 
-    <h2>リソース操作</h2>
-    <table>
-      <tr>
-        <th>書式</th>
-        <th>説明</th>
-      </tr>
-      <tr>
-        <td><code>:リソース名+値</code></td>
-        <td>送信元キャラのリソースを増加します。値にはBCDice、四則演算、<code>&#123;ステータス名&#125;</code> 参照を使用できます。</td>
-      </tr>
-      <tr>
-        <td><code>:リソース名-値</code></td>
-        <td>送信元キャラのリソースを減少します。式全体を計算した結果が反映されます。</td>
-      </tr>
-      <tr>
-        <td><code>:リソース名=値</code></td>
-        <td>送信元キャラのリソースを指定値にします。</td>
-      </tr>
-      <tr>
-        <td><code>:HP-4 :MP-4</code></td>
-        <td>半角スペース区切りで、複数のリソース操作を同時に処理します。</td>
-      </tr>
-      <tr>
-        <td><code>:HP-4 コメント</code></td>
-        <td>半角スペース以降の <code>:</code> で始まらない文字列はコメントとして残し、コマンド処理から除外します。</td>
-      </tr>
-      <tr>
-        <td><code>M</code></td>
-        <td>接尾辞。最大値を超えないようにします。</td>
-      </tr>
-      <tr>
-        <td><code>!</code></td>
-        <td>接尾辞。ダメージ計算が回復に反転するなど、リソースに与える値が0以下になるケースを防ぎます。</td>
-      </tr>
-    </table>
-    <p class="example-note">例: <code>:HP-1d6</code> はHPからBCDiceの結果を減らします。</p>
-    <p class="example-note">例: <code>:HP-10+5</code> は <code>-10+5</code> を計算し、HP-5として扱います。</p>
-    <p class="example-note">式内の空括弧 <code>()</code> は0として扱われるため、チャットパレットの入力欄用の雛形に使えます。</p>
-    <p class="example-note">例: <code>:HP-5+&#123;防護&#125;</code> は防護を参照して最終値を計算します。</p>
-    <p class="example-note">未登録の補正ステータスを式で参照した場合は、詳細の「バフ・デバフ」欄へ0の項目として自動追加されます。</p>
-    <p class="example-note">例: <code>:HP+30M!</code> は最大値を超えず、増減反転も防ぎます。</p>
-    <p class="example-note">例: <code>:HP-4+&#123;防護&#125;! 【ダメージ計算】</code> は先頭のリソース操作だけを処理し、後半をコメントとして残します。</p>
+    <article
+      #helpTopic
+      class="help-topic"
+      data-help-tab="commands"
+      data-help-topic="status-reference"
+      data-title="ステータス参照"
+      data-summary="判定式から送信元キャラのステータスを参照"
+      data-keywords="BCDice ダイス 筋力 防護 能力値 波括弧 中括弧">
+      <h2 tabindex="-1">ステータス参照</h2>
+      <p class="topic-lead">ステータス名を <code>&#123; &#125;</code> で囲むと、送信元キャラの現在値を判定へ組み込めます。バフ・デバフによる補正も反映されます。</p>
+      <div class="format-block">
+        <span>書式</span>
+        <code>2d6+&#123;ステータス名&#125;</code>
+      </div>
+      <div class="example-card">
+        <div class="example-heading">
+          <strong>実行例</strong>
+          <button type="button" class="copy-button" (click)="copyCommand('2d6+{筋力}')" aria-label="2d6+{筋力} をコピー">
+            <i class="material-icons" aria-hidden="true">{{copiedCommand === '2d6+{筋力}' ? 'check' : 'content_copy'}}</i>
+            <span>{{copiedCommand === '2d6+{筋力}' ? 'コピー済み' : 'コピー'}}</span>
+          </button>
+        </div>
+        <dl class="example-grid">
+          <div><dt>前提</dt><dd>送信元キャラの筋力が3</dd></div>
+          <div><dt>入力</dt><dd><code>2d6+&#123;筋力&#125;</code></dd></div>
+          <div><dt>結果</dt><dd><code>2d6+3</code> として判定</dd></div>
+        </dl>
+      </div>
+    </article>
+
+    <article
+      #helpTopic
+      class="help-topic"
+      data-help-tab="commands"
+      data-help-topic="resource-command"
+      data-title="リソース操作"
+      data-summary="HPやMPの増減・設定・上限・逆転防止"
+      data-keywords="HP MP リソース BCDice 四則演算 最大値 M 逆転 ! コメント 複数">
+      <h2 tabindex="-1">リソース操作</h2>
+      <p class="topic-lead">コマンドは半角の <code>:</code> で始めます。値には数値、BCDice、四則演算、<code>&#123;ステータス名&#125;</code> 参照を使用できます。</p>
+      <div class="table-scroll">
+        <table>
+          <caption class="visually-hidden">リソース操作コマンドの書式</caption>
+          <thead>
+            <tr><th scope="col">書式</th><th scope="col">動作</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>:HP+値</code></td><td>現在値へ加算します。</td></tr>
+            <tr><td><code>:HP-値</code></td><td>現在値から減算します。</td></tr>
+            <tr><td><code>:HP*値</code> / <code>:HP/値</code></td><td>現在値を乗算または除算します。0による除算は実行されません。</td></tr>
+            <tr><td><code>:HP=値</code></td><td>現在値を指定値にします。</td></tr>
+            <tr><td><code>:HP-4 :MP-4</code></td><td>半角スペースで区切り、行頭から連続する複数の操作を実行します。</td></tr>
+            <tr><td><code>:HP-4 コメント</code></td><td>最初のコメント以降は表示だけを残し、コマンドとして実行しません。</td></tr>
+            <tr><td><code>M</code></td><td>式の末尾へ付け、処理後の値をリソースの最大値以下にします。</td></tr>
+            <tr><td><code>!</code></td><td>式の末尾へ付け、計算結果が指定した増減方向と逆向きになる場合は操作量を0にします。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="example-card">
+        <div class="example-heading">
+          <strong><code>!</code> を使うダメージ計算</strong>
+          <button type="button" class="copy-button" (click)="copyCommand(':HP-4+{防護}!')" aria-label=":HP-4+{防護}! をコピー">
+            <i class="material-icons" aria-hidden="true">{{copiedCommand === ':HP-4+{防護}!' ? 'check' : 'content_copy'}}</i>
+            <span>{{copiedCommand === ':HP-4+{防護}!' ? 'コピー済み' : 'コピー'}}</span>
+          </button>
+        </div>
+        <dl class="example-grid">
+          <div><dt>前提</dt><dd>HP 20、防護 6</dd></div>
+          <div><dt>入力</dt><dd><code>:HP-4+&#123;防護&#125;!</code></dd></div>
+          <div><dt>結果</dt><dd>回復へ逆転させず、HPは20のまま</dd></div>
+        </dl>
+      </div>
+      <ul class="example-list">
+        <li><code>:HP-1d6</code><span>HPからBCDiceの結果を減らします。</span></li>
+        <li><code>:HP-10+5</code><span><code>-10+5</code> を計算し、HPを5減らします。</span></li>
+        <li><code>:HP+30M</code><span>HPを30回復し、最大値で止めます。</span></li>
+        <li><code>:HP-4 :MP-2 【攻撃コスト】</code><span>HPとMPを操作し、後半をコメントとして残します。</span></li>
+      </ul>
+      <p class="sub-note">式内の空括弧 <code>()</code> は0として扱われるため、チャットパレットの入力欄用の雛形にも使えます。未登録の補正ステータスを参照すると、詳細の「バフ・デバフ」欄へ値0で自動追加されます。</p>
+    </article>
   </section>
 
-  <section *ngIf="selectedTab === 'effects'">
-    <h2>ラウンド管理</h2>
-    <table>
-      <tr>
-        <th>書式</th>
-        <th>説明</th>
-      </tr>
-      <tr>
-        <td><code>/round +1</code></td>
-        <td>ラウンドを1増加します。GMモード中のユーザーのみ実行できます。メインチャットに <code>【1ラウンド目】</code> のように表示され、バフ/デバフの残りラウンドも減少します。</td>
-      </tr>
-      <tr>
-        <td><code>/round reset</code></td>
-        <td>ラウンドを0に戻し、付与中の効果と行動完了状態を削除します。GMモード中のユーザーのみ実行できます。戦闘終了時のリセットに使用します。</td>
-      </tr>
-    </table>
-    <p>ラウンドが0以外の場合、各チャットには <code>1R</code> のようなラウンド注釈が付きます。効果管理画面のラウンド表示には、テーブル上コマの行動完了数が <code>2/3</code> のように表示されます。ラウンドが1以上の時は、テーブル上の全キャラが行動完了になるまで次ラウンドへ進めません。ラウンド進行時、各キャラの行動完了状態はリセットされます。</p>
+  <section
+    class="help-panel"
+    role="tabpanel"
+    [id]="tabPanelId('effects')"
+    [attr.aria-labelledby]="tabButtonId('effects')"
+    [hidden]="selectedTab !== 'effects'">
+    <div class="panel-intro">
+      <strong>戦闘の進行と一時効果</strong>
+      <p>「メニュー → 効果」から、ラウンド、行動完了、バフ・デバフ、キャラごとのテンプレートをまとめて管理できます。</p>
+    </div>
+    <nav class="topic-nav" aria-label="バフとラウンドの見出し">
+      <span>このタブ:</span>
+      <button type="button" (click)="openTopic('effects', 'round')">ラウンド管理</button>
+      <button type="button" (click)="openTopic('effects', 'buff-command')">バフ・デバフ</button>
+      <button type="button" (click)="openTopic('effects', 'effect-management')">効果管理画面</button>
+    </nav>
 
-    <h2>バフ/デバフ</h2>
-    <table>
-      <tr>
-        <th>書式</th>
-        <th>説明</th>
-      </tr>
-      <tr>
-        <td><code>/buff 効果名/対象+数値/ラウンド</code></td>
-        <td>対象ステータスへ数値を加算する効果を、指定ラウンド分付与します。</td>
-      </tr>
-      <tr>
-        <td><code>/buff 効果名/対象-数値/ラウンド</code></td>
-        <td>対象ステータスから数値を減算する効果を、指定ラウンド分付与します。</td>
-      </tr>
-      <tr>
-        <td><code>/buff 効果名/対象*倍率/ラウンド</code></td>
-        <td>対象ステータスへ乗算補正を行う効果を付与します。半減などに使用できます。</td>
-      </tr>
-      <tr>
-        <td><code>/buff 効果名/自由記述/ラウンド</code></td>
-        <td>ステータスを指定せず、説明文のみの効果を付与します。</td>
-      </tr>
-      <tr>
-        <td><code>/buff 効果名/効果1;効果2/ラウンド</code></td>
-        <td>効果を半角セミコロンで区切り、1つのバフに複数のステータス補正や自由記述を設定します。</td>
-      </tr>
-      <tr>
-        <td><code>/buff テンプレート名</code></td>
-        <td>送信元キャラに登録済みのテンプレートを、選択中のコマへ付与します。未選択時は送信元キャラへ付与します。</td>
-      </tr>
-      <tr>
-        <td><code>/buff テンプレート名 :MP-3</code></td>
-        <td>バフ付与と同時に、送信元キャラのリソース操作を処理します。末尾に半角スペース区切りで <code>:リソース名-値</code> などを複数指定できます。</td>
-      </tr>
-    </table>
-    <p>バフコマンドは選択中のコマへ付与されます。コマを選択していない場合は、チャットの発行元キャラクターへ付与されます。</p>
-    <p class="example-note">例: <code>/buff 強化/筋力+2/2</code> は「強化」という名前の筋力を+2する効果を2ラウンド付与します。</p>
-    <p class="example-note">例: <code>/buff 有利/次の判定に有利/1</code> は自由記述の効果を1ラウンド付与します。</p>
-    <p class="example-note">例: <code>/buff 戦闘態勢/筋力+2;防護+1;移動力-1/3</code> は3つの補正をまとめて3ラウンド付与します。</p>
-    <p class="example-note">例: <code>/buff キャッツアイ :MP-3</code> はテンプレート「キャッツアイ」を付与し、送信元キャラのMPを3点減らします。</p>
-    <p class="example-note">例: <code>/buff 魔法支援/命中+1/3 :MP-5 :魔晶石5点-1</code> のように、MP以外のリソース操作も同時に実行できます。この形式の行をチャットパレットに入れておくと、リソース操作付きテンプレートとして自動登録されます。</p>
-    <p>全く同じ効果は同じ対象へ重複付与されません。付与中の効果はキャラコマ上にも表示されます。</p>
-    <p>対象キャラに補正先ステータスが存在しない場合は、詳細の「バフ・デバフ」欄へ0の項目として自動追加されます。補正中のパラメータには、詳細欄で補正値と補正後の値が表示されます。</p>
-    <p>キャラクターZIPには付与中の効果や効果管理画面のテンプレートは保存されません。ZIPからキャラクターを読み込むと、チャットパレット内の <code>/buff 効果名/効果内容/ラウンド</code> 形式の行が、そのキャラクターのバフテンプレートとして自動登録されます。</p>
+    <article
+      #helpTopic
+      class="help-topic"
+      data-help-tab="effects"
+      data-help-topic="round"
+      data-title="ラウンド管理"
+      data-summary="Next Round、Reset、行動完了の進行ルール"
+      data-keywords="round Next Round Reset ラウンド 行動完了 GM 1R 2/3">
+      <h2 tabindex="-1">ラウンド管理</h2>
+      <p class="topic-lead">GMモード中に「メニュー → 効果」を開き、<strong>Next Round</strong> で進行、<strong>Reset</strong> で戦闘を終了します。</p>
+      <div class="table-scroll">
+        <table>
+          <caption class="visually-hidden">ラウンド操作コマンド</caption>
+          <thead>
+            <tr><th scope="col">書式</th><th scope="col">動作</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>/round +1</code></td><td>ラウンドを1進めます。メインチャットへ <code>【1ラウンド目】</code> のように記録し、効果の残りラウンドを減らします。</td></tr>
+            <tr><td><code>/round reset</code></td><td>ラウンドを0へ戻し、付与中の効果と行動完了状態を削除します。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="example-actions">
+        <button type="button" class="copy-button" (click)="copyCommand('/round +1')" aria-label="/round +1 をコピー">
+          <i class="material-icons" aria-hidden="true">{{copiedCommand === '/round +1' ? 'check' : 'content_copy'}}</i>
+          <span>{{copiedCommand === '/round +1' ? 'コピー済み' : '/round +1 をコピー'}}</span>
+        </button>
+      </div>
+      <ul class="compact-list">
+        <li>ラウンド1以上では、各チャットへ <code>1R</code> のような注釈が付きます。</li>
+        <li>効果管理には、テーブル上コマの行動完了数が <code>2/3</code> のように表示されます。</li>
+        <li>全キャラが行動完了になるまで、次のラウンドへ進めません。進行後は行動完了がリセットされます。</li>
+      </ul>
+      <aside class="callout warning">
+        <i class="material-icons" aria-hidden="true">restart_alt</i>
+        <div><strong>Resetは取り消せません</strong><span>付与中の効果と行動完了状態を即時に削除します。戦闘終了時にだけ実行してください。</span></div>
+      </aside>
+    </article>
 
-    <h2>効果管理画面</h2>
-    <p>メニューの「効果管理」から、ラウンド、付与中効果、コマごとのテンプレートを管理できます。テンプレートには「ステータス補正」と「自由記述」を組み合わせて複数の効果を登録できます。リソース操作欄へ <code>:MP-3</code> などを入れると、テンプレート付与時に使用コマのリソースも同時に操作されます。</p>
-    <p>テンプレート欄のコピー操作を使うと、選択中のコマに登録済みのテンプレートをまとめて <code>/buff 効果名/効果内容/ラウンド :MP-3</code> 形式の複数行コマンドとしてクリップボードへコピーできます。</p>
+    <article
+      #helpTopic
+      class="help-topic"
+      data-help-tab="effects"
+      data-help-topic="buff-command"
+      data-title="バフ・デバフ"
+      data-summary="ステータス補正や自由記述をコマンドで付与"
+      data-keywords="buff バフ デバフ テンプレート 強化 有利 効果時間 MP リソース セミコロン">
+      <h2 tabindex="-1">バフ・デバフ</h2>
+      <p class="topic-lead"><code>/buff</code> の各要素は半角 <code>/</code>、複数効果は半角 <code>;</code> で区切ります。効果時間は1以上で指定し、小数は切り捨てられます。</p>
+      <div class="table-scroll">
+        <table>
+          <caption class="visually-hidden">バフ・デバフコマンドの書式</caption>
+          <thead>
+            <tr><th scope="col">書式</th><th scope="col">動作</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>/buff 効果名/対象+数値/ラウンド</code></td><td>対象ステータスへ加算する効果を付与します。<code>-</code> は減算、<code>*</code> は乗算です。</td></tr>
+            <tr><td><code>/buff 効果名/自由記述/ラウンド</code></td><td>ステータスを変えず、説明文だけの効果を付与します。</td></tr>
+            <tr><td><code>/buff 効果名/効果1;効果2/ラウンド</code></td><td>1つのバフへ複数の補正や説明をまとめます。</td></tr>
+            <tr><td><code>/buff テンプレート名</code></td><td>送信元キャラに登録済みのテンプレートを付与します。</td></tr>
+            <tr><td><code>/buff テンプレート名 :MP-3</code></td><td>付与と同時に、送信元キャラのリソースを操作します。リソース操作は行末へ連続して置きます。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="example-card">
+        <div class="example-heading">
+          <strong>複数の補正をまとめる</strong>
+          <button type="button" class="copy-button" (click)="copyCommand('/buff 戦闘態勢/筋力+2;防護+1;移動力-1/3')" aria-label="/buff 戦闘態勢/筋力+2;防護+1;移動力-1/3 をコピー">
+            <i class="material-icons" aria-hidden="true">{{copiedCommand === '/buff 戦闘態勢/筋力+2;防護+1;移動力-1/3' ? 'check' : 'content_copy'}}</i>
+            <span>{{copiedCommand === '/buff 戦闘態勢/筋力+2;防護+1;移動力-1/3' ? 'コピー済み' : 'コピー'}}</span>
+          </button>
+        </div>
+        <dl class="example-grid">
+          <div><dt>入力</dt><dd><code>/buff 戦闘態勢/筋力+2;防護+1;移動力-1/3</code></dd></div>
+          <div><dt>結果</dt><dd>3つの補正を「戦闘態勢」として3ラウンド付与</dd></div>
+        </dl>
+      </div>
+      <ul class="example-list">
+        <li><code>/buff 有利/次の判定に有利/1</code><span>自由記述の効果を1ラウンド付与します。</span></li>
+        <li><code>/buff キャッツアイ :MP-3</code><span>テンプレートを付与し、送信元キャラのMPを3減らします。</span></li>
+        <li><code>/buff 魔法支援/命中+1/3 :MP-5 :魔晶石5点-1</code><span>効果付与と複数のコスト消費を同時に処理します。</span></li>
+      </ul>
+      <aside class="callout info">
+        <i class="material-icons" aria-hidden="true">refresh</i>
+        <div><strong>同じ効果をもう一度付与した場合</strong><span>同じ対象・名前・内容の行は増えず、指定した残りラウンドへ更新されます。同じ残り時間なら効果は変わりませんが、末尾やテンプレート内のリソース操作は毎回実行されます。MPなどの二重消費に注意してください。</span></div>
+      </aside>
+      <p class="sub-note">補正先ステータスが存在しない場合は、詳細の「バフ・デバフ」欄へ値0で自動追加されます。補正値と補正後の値も同じ欄で確認できます。</p>
+    </article>
+
+    <article
+      #helpTopic
+      class="help-topic"
+      data-help-tab="effects"
+      data-help-topic="effect-management"
+      data-title="効果管理画面"
+      data-summary="使用コマ、付与対象、テンプレート、有効な効果の管理"
+      data-keywords="メニュー 効果 使用コマ 付与対象 テンプレート コピー 有効な効果">
+      <h2 tabindex="-1">効果管理画面</h2>
+      <p class="topic-lead">テンプレートには複数のステータス補正・自由記述・リソース操作を登録できます。</p>
+      <div class="compare-grid">
+        <div>
+          <strong>使用コマ</strong>
+          <span>テンプレートの所有者で、付与時のリソース消費元です。</span>
+        </div>
+        <div>
+          <strong>付与対象</strong>
+          <span>テーブルで選択中のコマです。未選択時は使用コマになります。</span>
+        </div>
+      </div>
+      <ol class="step-list compact">
+        <li><strong>使用コマを選ぶ</strong><span>そのキャラに登録されたテンプレートが表示されます。</span></li>
+        <li><strong>必要なら対象コマを選ぶ</strong><span>複数選択すると、まとめて付与できます。</span></li>
+        <li><strong>テンプレートの再生ボタンを押す</strong><span>効果と登録済みのリソース操作を同時に実行します。</span></li>
+      </ol>
+      <aside class="callout tip">
+        <i class="material-icons" aria-hidden="true">content_copy</i>
+        <div><strong>テンプレートをZIPで持ち運ぶ</strong><span>「全テンプレートをコピー」で複数行の定義コマンドを取得し、チャットパレットへ貼り付けてからキャラZIPを保存します。半角 <code>/</code> は項目、半角 <code>;</code> は複数効果の区切りなので、名前や自由記述には使わないでください。</span></div>
+      </aside>
+    </article>
   </section>
 
-  <section *ngIf="selectedTab === 'gm'">
-    <h2>GMモード</h2>
-    <dl>
-      <dt>切り替え</dt>
-      <dd>GMモードは接続状態やルーム作成者に依存せず、接続情報パネルから自分で切り替えます。</dd>
-      <dt>有効化時の確認</dt>
-      <dd>有効化時には、秘匿中のステータスやGM向けチャット内容が見えるようになることを確認してからONにします。</dd>
-      <dt>キャラ閲覧</dt>
-      <dd>GMモード中に作成したキャラやzipから追加したキャラも、詳細表示やチャットパレットは通常通り開けます。</dd>
-      <dt>再接続</dt>
-      <dd>GMモードは各ブラウザのローカル設定です。再接続後も必要に応じて接続情報パネルで状態を確認し、切り替えてください。</dd>
-    </dl>
+  <section
+    class="help-panel"
+    role="tabpanel"
+    [id]="tabPanelId('gm')"
+    [attr.aria-labelledby]="tabButtonId('gm')"
+    [hidden]="selectedTab !== 'gm'">
+    <div class="panel-intro">
+      <strong>表示モードとして使います</strong>
+      <p>GMモードとステータス秘匿は、セッション中の表示を整理する機能です。参加者のアクセス権限を制御する機能ではありません。</p>
+    </div>
+    <nav class="topic-nav" aria-label="GMと秘匿の見出し">
+      <span>このタブ:</span>
+      <button type="button" (click)="openTopic('gm', 'gm-mode')">GMモード</button>
+      <button type="button" (click)="openTopic('gm', 'hidden-status')">ステータス秘匿</button>
+    </nav>
 
-    <h2>ステータス秘匿</h2>
-    <dl>
-      <dt>設定方法</dt>
-      <dd>キャラクターシートの <code>ステータス秘匿</code> を有効にします。</dd>
-      <dt>非GMからの見え方</dt>
-      <dd>マウスオーバー時の概要パネル、インベントリ上の簡易ステータス表示では、値が <code>??</code> になります。</dd>
-      <dt>GMからの見え方</dt>
-      <dd>GMモードのユーザーには、秘匿中のステータスも通常通り表示されます。</dd>
-      <dt>リソース操作コマンド</dt>
-      <dd>秘匿中キャラのリソース操作では、非GMには元コマンドの式、参照ステータス、現在値、更新後値、最終合算値が伏せられます。GMには詳細が表示されます。</dd>
-    </dl>
-    <p class="example-note">非GM表示例: <code>:HP ??</code> / <code>キャラ名 HP: ?? -> ??</code></p>
-    <p class="example-note">GM表示例: <code>:HP-5+&#123;防護&#125;</code> / <code>キャラ名 HP: 20 -> 17 (-5+&#123;防護&#125; = -3)</code></p>
+    <article
+      #helpTopic
+      class="help-topic"
+      data-help-tab="gm"
+      data-help-topic="gm-mode"
+      data-title="GMモード"
+      data-summary="接続パネルから任意に切り替えるGM向け表示"
+      data-keywords="GM 接続 切り替え 再接続 ローカル設定 画面共有 配信">
+      <h2 tabindex="-1">GMモード</h2>
+      <dl class="term-list">
+        <dt>切り替える</dt>
+        <dd>「メニュー → 接続」から、自分のGMモードを有効または無効にします。ルーム作成者や接続状態には依存しません。</dd>
+        <dt>GM向け表示</dt>
+        <dd>秘匿中のステータスと、秘匿されたリソース操作ログの詳細を確認できます。</dd>
+        <dt>キャラクターを閲覧する</dt>
+        <dd>GMモード中に作成したキャラやZIPから追加したキャラも、詳細やチャットパレットを通常どおり開けます。</dd>
+        <dt>再接続する</dt>
+        <dd>GMモードはブラウザごとのローカル設定です。再接続後は必要に応じて「メニュー → 接続」で状態を確認してください。</dd>
+      </dl>
+      <aside class="callout warning">
+        <i class="material-icons" aria-hidden="true">privacy_tip</i>
+        <div><strong>GMモードは権限制御ではありません</strong><span>各参加者が自分で切り替えられます。画面共有や配信中に有効化する場合は、秘匿情報の映り込みに注意してください。</span></div>
+      </aside>
+    </article>
+
+    <article
+      #helpTopic
+      class="help-topic"
+      data-help-tab="gm"
+      data-help-topic="hidden-status"
+      data-title="ステータス秘匿"
+      data-summary="概要・一覧・リソースログを非GM向けにマスク"
+      data-keywords="ステータス秘匿 非GM ?? キャラクターシート 一覧 インベントリ リソース ログ">
+      <h2 tabindex="-1">ステータス秘匿</h2>
+      <p class="topic-lead">キャラクターシートで「ステータス秘匿」を有効にすると、非GM向けの概要・「メニュー → 一覧」・リソース操作ログを <code>??</code> で隠します。</p>
+      <div class="table-scroll">
+        <table class="comparison-table">
+          <caption class="visually-hidden">ステータス秘匿中のGMと非GMの表示比較</caption>
+          <thead>
+            <tr><th scope="col">表示先</th><th scope="col">非GM</th><th scope="col">GM</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">概要・一覧</th><td><code>HP: ??</code></td><td><code>HP: 20</code></td></tr>
+            <tr><th scope="row">送信コマンド（防護2）</th><td><code>:HP ??</code></td><td><code>:HP-5+2</code></td></tr>
+            <tr><th scope="row">結果ログ</th><td><code>HP: ?? → ??</code></td><td><code>HP: 20 → 17 (-3)</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <aside class="callout info">
+        <i class="material-icons" aria-hidden="true">info</i>
+        <div><strong>キャラクター詳細そのものはロックしません</strong><span>秘匿は表示を整理する機能で、キャラクター詳細の閲覧を禁止するものではありません。アクセス制限が必要な情報は登録しないでください。</span></div>
+      </aside>
+    </article>
   </section>
+
+  <div class="copy-status" role="status" aria-live="polite" *ngIf="copyStatus">{{copyStatus}}</div>
 </div>

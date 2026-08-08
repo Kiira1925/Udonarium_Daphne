@@ -3,7 +3,10 @@ import { ObjectNode } from '@udonarium/core/synchronize-object/object-node';
 import { EventSystem } from '@udonarium/core/system';
 import { DataElement } from '@udonarium/data-element';
 import { GameCharacter } from '@udonarium/game-character';
+import { GameTableMask } from '@udonarium/game-table-mask';
 import { RoomState } from '@udonarium/room-state';
+import { TabletopObject } from '@udonarium/tabletop-object';
+import { GameTableMaskScratchService } from 'service/game-table-mask-scratch.service';
 
 @Component({
   selector: 'game-data-element, [game-data-element]',
@@ -40,7 +43,8 @@ export class GameDataElementComponent implements OnInit, OnChanges, OnDestroy {
   private updateTimer: NodeJS.Timeout = null;
 
   constructor(
-    private changeDetector: ChangeDetectorRef
+    private changeDetector: ChangeDetectorRef,
+    private gameTableMaskScratchService: GameTableMaskScratchService
   ) { }
 
   ngOnInit() {
@@ -71,6 +75,11 @@ export class GameDataElementComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnDestroy() {
+    if (this.updateTimer) {
+      clearTimeout(this.updateTimer);
+      this.updateTimer = null;
+      this.applyPendingValues();
+    }
     EventSystem.unregister(this);
   }
 
@@ -118,10 +127,15 @@ export class GameDataElementComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private ownerCharacter(): GameCharacter | null {
+    let owner = this.ownerTabletopObject();
+    return owner instanceof GameCharacter ? owner : null;
+  }
+
+  private ownerTabletopObject(): TabletopObject | null {
     let node: ObjectNode = this.gameDataElement;
     while (node) {
       if (node.parent && !(node.parent instanceof DataElement)) {
-        return node.parent instanceof GameCharacter ? node.parent : null;
+        return node.parent instanceof TabletopObject ? node.parent : null;
       }
       node = node.parent;
     }
@@ -131,10 +145,21 @@ export class GameDataElementComponent implements OnInit, OnChanges, OnDestroy {
   private setUpdateTimer() {
     clearTimeout(this.updateTimer);
     this.updateTimer = setTimeout(() => {
-      if (this.gameDataElement.name !== this.name) this.gameDataElement.name = this.name;
-      if (this.gameDataElement.currentValue !== this.currentValue) this.gameDataElement.currentValue = this.currentValue;
-      if (this.gameDataElement.value !== this.value) this.gameDataElement.value = this.value;
       this.updateTimer = null;
+      this.applyPendingValues();
     }, 66);
+  }
+
+  private applyPendingValues() {
+    if (!this.gameDataElement || this.isScratchMutationBlocked()) return;
+    if (this.gameDataElement.name !== this.name) this.gameDataElement.name = this.name;
+    if (this.gameDataElement.currentValue !== this.currentValue) this.gameDataElement.currentValue = this.currentValue;
+    if (this.gameDataElement.value !== this.value) this.gameDataElement.value = this.value;
+  }
+
+  private isScratchMutationBlocked(): boolean {
+    let owner = this.ownerTabletopObject();
+    return owner instanceof GameTableMask
+      && this.gameTableMaskScratchService.lockFor(owner.identifier) != null;
   }
 }

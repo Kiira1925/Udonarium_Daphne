@@ -1,17 +1,116 @@
-<div class="component is-3d" [ngClass]="{'is-grab': !isLock}"
+<div class="component is-3d" [ngClass]="{'is-grab': !isLock && !isScratchLocked}"
   [style.width.px]="width * gridSize" [style.height.px]="height * gridSize"
-  appMovable [movable.option]="movableOption" [movable.disable]="isLock" (movable.ondragstart)="onMove()" (movable.ondragend)="onMoved()">
-  <div *ngIf="imageFile.url.length < 1; then blackMask; else imageMask"></div>
-  <ng-template #blackMask>
-    <div class="border is-fit-full" [style.background-color]="'rgba(10, 10, 10,' + opacity +')'"></div>
-  </ng-template>
-  <ng-template #imageMask>
-    <div class="border is-fit-full chrome-smooth-image-trick">
-      <img class="image is-fit-full chrome-smooth-image-trick" [style.opacity]="opacity" [src]="imageFile.url | safe: 'resourceUrl'">
-    </div>
-  </ng-template>
+  appMovable [movable.option]="movableOption" [movable.disable]="isLock || isScratchLocked"
+  (movable.ondragstart)="onMove()" (movable.ondragend)="onMoved()">
+  <svg class="mask-surface chrome-smooth-image-trick" xmlns="http://www.w3.org/2000/svg"
+    [attr.viewBox]="scratchViewBox" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <mask [attr.id]="scratchMaskId" maskUnits="userSpaceOnUse"
+        x="0" y="0" [attr.width]="width" [attr.height]="height">
+        <rect x="0" y="0" [attr.width]="width" [attr.height]="height" fill="white"></rect>
+        <rect *ngFor="let area of scratchAreas"
+          [attr.x]="area.x" [attr.y]="area.y" [attr.width]="area.width" [attr.height]="area.height"
+          fill="black"></rect>
+      </mask>
+    </defs>
+    <g [attr.mask]="'url(#' + scratchMaskId + ')'" [attr.opacity]="isScratchEditing ? 0.45 : 1">
+      <rect *ngIf="imageFile.url.length < 1"
+        x="0" y="0" [attr.width]="width" [attr.height]="height"
+        fill="rgb(10, 10, 10)" [attr.fill-opacity]="opacity"></rect>
+      <image *ngIf="0 < imageFile.url.length"
+        x="0" y="0" [attr.width]="width" [attr.height]="height"
+        preserveAspectRatio="none" [attr.opacity]="opacity" [attr.href]="imageFile.url"></image>
+    </g>
+  </svg>
+  <div class="border is-fit-full"></div>
+
   <div *ngIf="isLock" class="lock-icon is-center">
     <i class="material-icons">lock</i>
   </div>
-  <div *ngIf="isSelected" class="selected-highlight border" [ngClass]="{'is-magnetic': isMagnetic}"></div>
+  <div *ngIf="scratchLock && !isScratchEditing && !isScratchLockPending"
+    class="scratch-lock-badge" role="status" aria-live="polite">
+    <i class="material-icons">edit</i>
+    <span>{{scratchLockStatusText}}</span>
+  </div>
+  <div *ngIf="isScratchLockPending" class="scratch-lock-badge" role="status" aria-live="polite">
+    <i class="material-icons is-spinning">sync</i>
+    <span>編集ロックを取得中</span>
+  </div>
+
+  <div *ngIf="isScratchEditing" class="scratch-editor-surface"
+    [ngClass]="{'is-restore': scratchEditMode === 'restore'}"
+    (pointerdown)="onScratchPointerDown($event)"
+    (pointermove)="onScratchPointerMove($event)"
+    (pointerup)="onScratchPointerUp($event)"
+    (pointercancel)="onScratchPointerCancel($event)"
+    (mousedown)="suppressScratchGesture($event)"
+    (mousemove)="suppressScratchGesture($event)"
+    (mouseup)="suppressScratchGesture($event)"
+    (touchstart)="suppressScratchGesture($event)"
+    (touchmove)="suppressScratchGesture($event)"
+    (touchend)="suppressScratchGesture($event)"
+    (touchcancel)="suppressScratchGesture($event)"
+    (contextmenu)="suppressScratchContextMenu($event)">
+    <div class="scratch-cell-states" aria-hidden="true">
+      <div *ngFor="let cell of scratchGridCells" class="scratch-cell-state"
+        [class.is-revealed]="cell.isRevealed"
+        [class.is-selected]="isScratchCellSelected(cell)"
+        [class.is-unselectable]="!isScratchCellSelectable(cell)"
+        [style.left.px]="cell.x * gridSize" [style.top.px]="cell.y * gridSize"
+        [style.width.px]="gridSize" [style.height.px]="gridSize">
+        <span class="scratch-cell-state-marker">
+          <i class="material-icons">{{cell.isRevealed ? 'visibility' : 'visibility_off'}}</i>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isScratchEditing" class="scratch-state-legend" aria-label="グリッドの公開状態">
+    <span class="is-covered"><i class="material-icons" aria-hidden="true">visibility_off</i>未公開</span>
+    <span class="is-revealed"><i class="material-icons" aria-hidden="true">visibility</i>公開済み</span>
+  </div>
+
+  <div *ngIf="isScratchEditing" class="scratch-toolbar"
+    (pointerdown)="suppressScratchGesture($event)"
+    (mousedown)="suppressScratchGesture($event)"
+    (mousemove)="suppressScratchGesture($event)"
+    (mouseup)="suppressScratchGesture($event)"
+    (touchstart)="suppressScratchGesture($event)"
+    (touchmove)="suppressScratchGesture($event)"
+    (touchend)="suppressScratchGesture($event)"
+    (touchcancel)="suppressScratchGesture($event)"
+    (contextmenu)="suppressScratchContextMenu($event)">
+    <span class="scratch-mode-label">編集モード</span>
+    <div class="scratch-mode-switch" role="radiogroup" aria-label="スクラッチ編集モード">
+      <button type="button" role="radio"
+        [attr.aria-checked]="scratchEditMode === 'reveal'"
+        [class.is-active]="scratchEditMode === 'reveal'"
+        [disabled]="isScratchCommitting"
+        (click)="setScratchEditMode('reveal'); $event.stopPropagation()">
+        <i class="material-icons mode-icon" aria-hidden="true">visibility</i>
+        <span>公開</span>
+        <i class="material-icons mode-check" aria-hidden="true">check</i>
+      </button>
+      <button type="button" role="radio"
+        [attr.aria-checked]="scratchEditMode === 'restore'"
+        [class.is-active]="scratchEditMode === 'restore'"
+        [disabled]="isScratchCommitting"
+        (click)="setScratchEditMode('restore'); $event.stopPropagation()">
+        <i class="material-icons mode-icon" aria-hidden="true">visibility_off</i>
+        <span>元に戻す</span>
+        <i class="material-icons mode-check" aria-hidden="true">check</i>
+      </button>
+    </div>
+    <span class="scratch-toolbar-label" role="status" aria-live="polite">{{scratchSelectionLabel}}</span>
+    <button type="button" class="scratch-confirm-button"
+      [class.is-restore]="scratchEditMode === 'restore'"
+      [disabled]="scratchSelectionCount < 1 || isScratchCommitting"
+      (click)="confirmScratchEditing(); $event.stopPropagation()">
+      {{scratchConfirmLabel}}
+    </button>
+    <button type="button" [disabled]="isScratchCommitting"
+      (click)="cancelScratchEditing(); $event.stopPropagation()">キャンセル</button>
+  </div>
+
+  <div *ngIf="isSelected && !isScratchEditing" class="selected-highlight border" [ngClass]="{'is-magnetic': isMagnetic}"></div>
 </div>

@@ -37,6 +37,7 @@ import { UIPanelComponent } from 'component/ui-panel/ui-panel.component';
 import { AppConfig, AppConfigService } from 'service/app-config.service';
 import { ChatMessageService } from 'service/chat-message.service';
 import { ContextMenuService } from 'service/context-menu.service';
+import { GameTableMaskScratchService } from 'service/game-table-mask-scratch.service';
 import { ModalService } from 'service/modal.service';
 import { PanelOption, PanelService } from 'service/panel.service';
 import { PointerDeviceService } from 'service/pointer-device.service';
@@ -63,6 +64,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     private chatMessageService: ChatMessageService,
     private appConfigService: AppConfigService,
     private saveDataService: SaveDataService,
+    private gameTableMaskScratchService: GameTableMaskScratchService,
     private ngZone: NgZone
   ) {
 
@@ -78,6 +80,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       ObjectSerializer.instance;
       ObjectStore.instance;
       ObjectSynchronizer.instance.initialize();
+      this.gameTableMaskScratchService.initialize();
     });
     this.appConfigService.initialize();
     this.pointerDeviceService.initialize();
@@ -200,6 +203,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.gameTableMaskScratchService.destroy();
     EventSystem.unregister(this);
   }
 
