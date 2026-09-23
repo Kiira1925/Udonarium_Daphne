@@ -332,11 +332,12 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
   }
 
   formatEffectBadge(effect: BuffEffect): string {
-    return `${effect.name} ${effect.remainingRounds}R`;
+    return `${effect.name} ${RoomState.instance.formatDuration(effect)}`;
   }
 
   formatEffectBadgeDetail(effect: BuffEffect): string {
     let content = RoomState.instance.formatEffectEntries(RoomState.instance.effectEntries(effect));
-    return content.length < 1 ? `${effect.name} ${effect.remainingRounds}R` : `${effect.name}: ${content} / ${effect.remainingRounds}R`;
+    let duration = RoomState.instance.formatDuration(effect);
+    return content.length < 1 ? `${effect.name} ${duration}` : `${effect.name}: ${content} / ${duration}`;
   }
 }

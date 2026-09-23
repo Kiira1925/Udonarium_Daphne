@@ -1,5 +1,6 @@
 export type BuffOperator = '+' | '-' | '*';
 export type BuffEffectKind = 'stat' | 'note';
+export type BuffDurationType = 'round' | 'instant';
 
 export interface BuffEffectEntry {
   kind: BuffEffectKind;
@@ -19,6 +20,7 @@ export interface BuffEffect {
   operator?: BuffOperator;
   amount?: number;
   description?: string;
+  durationType?: BuffDurationType;
   remainingRounds: number;
   createdRound: number;
 }
@@ -34,6 +36,7 @@ export interface BuffTemplate {
   operator?: BuffOperator;
   amount?: number;
   description?: string;
+  durationType?: BuffDurationType;
   durationRounds: number;
 }
 

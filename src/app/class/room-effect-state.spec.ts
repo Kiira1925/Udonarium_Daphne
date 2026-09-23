@@ -1,5 +1,6 @@
 import { BuffEffectEntry } from './buff-effect';
 import { CharacterActionState } from './character-action-state';
+import { ObjectStore } from './core/synchronize-object/object-store';
 import { RoomBuffTemplateState } from './room-buff-template-state';
 import { RoomEffectState } from './room-effect-state';
 import { RoomState } from './room-state';
@@ -48,16 +49,30 @@ describe('RoomEffectState', () => {
     expect(state.toBuffEffect(5).remainingRounds).toBe(0);
   });
 
+  it('exports instant effects independently from the shared round', () => {
+    let state = new RoomEffectState('effect-instant-test');
+    state.targetIdentifier = 'character-1';
+    state.name = '直後の判定';
+    state.entries = [strength];
+    state.durationType = 'instant';
+    state.createdRound = 2;
+    state.expiresAtRound = 3;
+
+    expect(state.toBuffEffect(20).durationType).toBe('instant');
+    expect(state.toBuffEffect(20).remainingRounds).toBe(0);
+  });
+
   it('refreshes all shared fields together', () => {
     let state = new RoomEffectState('effect-refresh-test');
     state.active = false;
     state.createdRound = 1;
     state.expiresAtRound = 2;
 
-    state.refresh(4, 3);
+    state.refresh(4, 3, 'instant');
 
     let context = state.toContext();
     expect(context.syncData['active']).toBe(true);
+    expect(context.syncData['durationType']).toBe('instant');
     expect(context.syncData['createdRound']).toBe(4);
     expect(context.syncData['expiresAtRound']).toBe(7);
   });
@@ -107,6 +122,7 @@ describe('RoomBuffTemplateState', () => {
       operator: '+',
       amount: 2,
       description: '',
+      durationType: 'instant',
       durationRounds: 5,
       resourceCommands: [':MP-3'],
     });
@@ -115,6 +131,7 @@ describe('RoomBuffTemplateState', () => {
     expect(context.syncData['ownerIdentifier']).toBe('character-1');
     expect(context.syncData['name']).toBe('template');
     expect(context.syncData['entries']).toEqual([templateStrength, templateArmor]);
+    expect(context.syncData['durationType']).toBe('instant');
     expect(context.syncData['durationRounds']).toBe(5);
     expect(context.syncData['resourceCommands']).toEqual([':MP-3']);
   });
@@ -133,6 +150,42 @@ describe('RoomBuffTemplateState', () => {
 });
 
 describe('RoomState command parsing', () => {
+  it('parses instant separately from round duration', () => {
+    let state = new RoomState('room-command-test');
+    let instant = (state as any).parseBuffCommand('Advantage/next roll/instant');
+    let rounds = (state as any).parseBuffCommand('Guard/Armor+1/3');
+
+    expect(instant.durationType).toBe('instant');
+    expect(instant.durationRounds).toBe(1);
+    expect(rounds.durationType).toBe('round');
+    expect(rounds.durationRounds).toBe(3);
+  });
+
+  it('consumes only instant effects owned by the character', () => {
+    let room = new RoomState('room-instant-consume-test');
+    let instant = new RoomEffectState('effect-instant-consume-test');
+    instant.targetIdentifier = 'character-instant-test';
+    instant.battleSequence = room.battleSequence;
+    instant.durationType = 'instant';
+    instant.active = true;
+    let rounds = new RoomEffectState('effect-round-consume-test');
+    rounds.targetIdentifier = instant.targetIdentifier;
+    rounds.battleSequence = room.battleSequence;
+    rounds.durationType = 'round';
+    rounds.active = true;
+
+    ObjectStore.instance.add(instant, false);
+    ObjectStore.instance.add(rounds, false);
+    try {
+      expect(room.consumeInstantEffects(instant.targetIdentifier)).toBe(1);
+      expect(instant.active).toBe(false);
+      expect(rounds.active).toBe(true);
+    } finally {
+      ObjectStore.instance.remove(instant);
+      ObjectStore.instance.remove(rounds);
+    }
+  });
+
   it('extracts trailing resource commands from a buff template command', () => {
     let state = new RoomState('room-command-test');
     let parsed = (state as any).extractTrailingResourceCommands('/buff CatsEye :MP-3 :Stone-1');

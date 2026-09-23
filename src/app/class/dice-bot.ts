@@ -48,6 +48,7 @@ export class DiceBot extends GameObject {
           let rollResult = await DiceBot.diceRollAsync(rollText, gameType);
           if (!rollResult.result) return;
           this.sendResultMessage(rollResult, chatMessage);
+          EventSystem.trigger('DICE_ROLL_EXECUTED', { sourceIdentifier: chatMessage.sourceIdentifier });
         } catch (e) {
           console.error(e);
         }
