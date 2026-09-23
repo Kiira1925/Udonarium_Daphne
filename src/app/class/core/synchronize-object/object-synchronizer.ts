@@ -21,10 +21,8 @@ export class ObjectSynchronizer {
 
   private constructor() { }
 
-  get hasActiveSynchronizationTasks(): boolean {
-    // requestMap には、同期元が切断した後も取得不能な要求が残ることがある。
-    // 調停処理の待機判定には、完了またはタイムアウトする実行中タスクだけを使う。
-    return 0 < this.tasks.length;
+  hasActiveSynchronizationTaskFor(identifier: ObjectIdentifier): boolean {
+    return this.tasks.some(task => task.hasRequest(identifier));
   }
 
   initialize() {

@@ -1,3 +1,4 @@
+import { fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
 import { ObjectStore } from '@udonarium/core/synchronize-object/object-store';
 import { ObjectSynchronizer } from '@udonarium/core/synchronize-object/object-synchronizer';
 import { EventSystem, Network } from '@udonarium/core/system';
@@ -313,12 +314,69 @@ describe('GameTableMaskScratchService arbitration', () => {
     synchronizer.tasks = [];
 
     try {
-      expect((service as any).isCoordinatorReady).toBe(true);
+      expect((service as any).isCoordinatorReadyFor('mask')).toBe(true);
     } finally {
       synchronizer.requestMap = originalRequestMap;
       synchronizer.tasks = originalTasks;
     }
   });
+
+  it('does not block a mask lock for unrelated synchronization tasks', () => {
+    let mask = GameTableMask.create('test', 4, 4, 100);
+    let synchronizer = ObjectSynchronizer.instance as any;
+    let originalTasks = synchronizer.tasks;
+    synchronizer.tasks = [{ hasRequest: (identifier: string) => identifier === 'another-object' }];
+
+    try {
+      (service as any).handleLockRequest(lockRequest(mask, 'token-b'), 'peer-b');
+      expect(service.lockFor(mask.identifier)?.token).toBe('token-b');
+    } finally {
+      synchronizer.tasks = originalTasks;
+    }
+  });
+
+  it('asks the requester to retry while the target mask is synchronizing', () => {
+    let mask = GameTableMask.create('test', 4, 4, 100);
+    let synchronizer = ObjectSynchronizer.instance as any;
+    let originalTasks = synchronizer.tasks;
+    synchronizer.tasks = [{ hasRequest: (identifier: string) => identifier === mask.identifier }];
+
+    try {
+      (service as any).handleLockRequest(lockRequest(mask, 'token-b'), 'peer-b');
+
+      expect(service.lockFor(mask.identifier)).toBeNull();
+      let resultCall = (EventSystem.call as jasmine.Spy).calls.mostRecent();
+      expect(resultCall.args[0]).toBe('RESULT_GAME_TABLE_MASK_SCRATCH_REQUEST');
+      expect(resultCall.args[1]).toEqual(
+        jasmine.objectContaining({ kind: 'lock', granted: false, retryable: true })
+      );
+      expect(resultCall.args[2]).toBe('peer-b');
+    } finally {
+      synchronizer.tasks = originalTasks;
+    }
+  });
+
+  it('automatically retries a transient coordinator wait', fakeAsync(() => {
+    let sendRequest = spyOn<any>(service, 'sendRequest').and.returnValues(
+      Promise.resolve('retry'),
+      Promise.resolve(true)
+    );
+    let outcome: boolean | null | undefined;
+
+    (service as any).sendRequestWithRetry('lock', 'LOCK', {
+      maskIdentifier: 'mask',
+      token: 'token',
+      generation: 0,
+    }, 1000).then((result: boolean | null) => outcome = result);
+
+    flushMicrotasks();
+    expect(sendRequest).toHaveBeenCalledTimes(1);
+    tick(250);
+    flushMicrotasks();
+
+    expect(sendRequest).toHaveBeenCalledTimes(2);
+    expect(outcome).toBe(true);
+  }));
 
   it('lets only the room master peer arbitrate room locks', () => {
     let mask = GameTableMask.create('test', 4, 4, 100);
