@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 
-import { BuffEffect, BuffEffectEntry, BuffEffectKind, BuffOperator, BuffTemplate, RoomState } from '@udonarium/room-state';
+import { BuffDurationType, BuffEffect, BuffEffectEntry, BuffEffectKind, BuffOperator, BuffTemplate, RoomState } from '@udonarium/room-state';
 import { ObjectStore } from '@udonarium/core/synchronize-object/object-store';
 import { EventSystem } from '@udonarium/core/system';
 import { GameCharacter } from '@udonarium/game-character';
@@ -17,6 +17,7 @@ interface TemplateForm {
   ownerIdentifier: string;
   name: string;
   effects: BuffEffectEntry[];
+  durationType: BuffDurationType;
   durationRounds: number;
   resourceCommandText: string;
 }
@@ -98,8 +99,9 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
   get canSaveTemplate(): boolean {
     if (!this.editingTemplate.ownerIdentifier
       || this.editingTemplate.name.trim().length < 1
-      || !Number.isFinite(Number(this.editingTemplate.durationRounds))
-      || Number(this.editingTemplate.durationRounds) < 1
+      || (this.editingTemplate.durationType === 'round'
+        && (!Number.isFinite(Number(this.editingTemplate.durationRounds))
+          || Number(this.editingTemplate.durationRounds) < 1))
       || this.roomState.normalizeResourceCommandTokens(this.editingTemplate.resourceCommandText) == null) {
       return false;
     }
@@ -237,6 +239,7 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
       ownerIdentifier: template.ownerIdentifier,
       name: template.name,
       effects: this.roomState.effectEntries(template).map(effect => ({ ...effect })),
+      durationType: template.durationType === 'instant' ? 'instant' : 'round',
       durationRounds: template.durationRounds,
       resourceCommandText: (template.resourceCommands ?? []).join(' '),
     };
@@ -260,7 +263,10 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
         amount: effect.kind === 'stat' ? Number(effect.amount) : 0,
         description: effect.kind === 'note' ? (effect.description ?? '').trim() : '',
       })),
-      durationRounds: Math.floor(Number(this.editingTemplate.durationRounds)),
+      durationType: this.editingTemplate.durationType === 'instant' ? 'instant' : 'round',
+      durationRounds: this.editingTemplate.durationType === 'instant'
+        ? 1
+        : Math.floor(Number(this.editingTemplate.durationRounds)),
     };
     let resourceCommands = this.roomState.normalizeResourceCommandTokens(this.editingTemplate.resourceCommandText) ?? [];
 
@@ -338,7 +344,8 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
       .map(entry => this.effectEntryCommand(entry))
       .join(';');
     let resources = template.resourceCommands?.length ? ` ${template.resourceCommands.join(' ')}` : '';
-    return `/buff ${template.name}/${effects}/${template.durationRounds}${resources}`;
+    let duration = template.durationType === 'instant' ? 'instant' : `${template.durationRounds}`;
+    return `/buff ${template.name}/${effects}/${duration}${resources}`;
   }
 
   private effectEntryCommand(entry: BuffEffectEntry): string {
@@ -409,6 +416,7 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
       ownerIdentifier: ownerIdentifier,
       name: '',
       effects: [this.createEffectForm()],
+      durationType: 'round',
       durationRounds: 1,
       resourceCommandText: '',
     };

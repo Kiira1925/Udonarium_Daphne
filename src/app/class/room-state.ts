@@ -1,6 +1,6 @@
 import { TabletopSelectionService } from 'service/tabletop-selection.service';
 
-import { BuffEffect, BuffEffectEntry, BuffEffectKind, BuffOperator, BuffTemplate } from './buff-effect';
+import { BuffDurationType, BuffEffect, BuffEffectEntry, BuffEffectKind, BuffOperator, BuffTemplate } from './buff-effect';
 import { CharacterActionState } from './character-action-state';
 import { DiceBot } from './dice-bot';
 import { ChatMessage, ChatMessageContext } from './chat-message';
@@ -16,7 +16,7 @@ import { GameCharacter } from './game-character';
 import { RoomBuffTemplateState } from './room-buff-template-state';
 import { RoomEffectState } from './room-effect-state';
 
-export { BuffEffect, BuffEffectEntry, BuffEffectKind, BuffOperator, BuffTemplate } from './buff-effect';
+export { BuffDurationType, BuffEffect, BuffEffectEntry, BuffEffectKind, BuffOperator, BuffTemplate } from './buff-effect';
 
 interface ResourceCommand {
   token: string;
@@ -50,7 +50,9 @@ export class RoomState extends GameObject {
 
   get effects(): BuffEffect[] {
     return ObjectStore.instance.getObjects(RoomEffectState)
-      .filter(effect => effect.active && effect.battleSequence === this.battleSequence && this.round < effect.expiresAtRound)
+      .filter(effect => effect.active
+        && effect.battleSequence === this.battleSequence
+        && (effect.durationType === 'instant' || this.round < effect.expiresAtRound))
       .map(effect => effect.toBuffEffect(this.round));
   }
 
@@ -78,6 +80,7 @@ export class RoomState extends GameObject {
     super.onStoreAdded();
     EventSystem.register(this)
       .on('SEND_MESSAGE', event => this.onSendMessage(event.data.tabIdentifier, event.data.messageIdentifier))
+      .on('DICE_ROLL_EXECUTED', event => this.consumeInstantEffects(event.data.sourceIdentifier))
       .on('DELETE_GAME_OBJECT', event => {
         if (event.data.aliasName === GameCharacter.aliasName) this.removeCharacterState(event.data.identifier);
       });
@@ -129,20 +132,23 @@ export class RoomState extends GameObject {
     this.update();
   }
 
-  addEffect(target: GameCharacter, name: string, entries: BuffEffectEntry[], remainingRounds: number): BuffEffect | null {
+  addEffect(target: GameCharacter, name: string, entries: BuffEffectEntry[], remainingRounds: number, durationType: BuffDurationType = 'round'): BuffEffect | null {
     let normalizedEntries = this.normalizeEffectEntries(entries);
     if (normalizedEntries.length < 1) return null;
     this.ensureEffectStatusElements(target, normalizedEntries);
+    durationType = durationType === 'instant' ? 'instant' : 'round';
 
     let identifier = RoomEffectState.identifierFor(target.identifier, this.battleSequence, name, normalizedEntries);
     let existing = ObjectStore.instance.get<RoomEffectState>(identifier);
     if (existing) {
-      if (existing.active && existing.expiresAtRound === this.round + remainingRounds) return null;
-      existing.refresh(this.round, remainingRounds);
+      if (existing.active
+        && existing.durationType === durationType
+        && (durationType === 'instant' || existing.expiresAtRound === this.round + remainingRounds)) return null;
+      existing.refresh(this.round, remainingRounds, durationType);
       return existing.toBuffEffect(this.round);
     }
 
-    let created = RoomEffectState.create(target.identifier, this.battleSequence, name, normalizedEntries, this.round, remainingRounds);
+    let created = RoomEffectState.create(target.identifier, this.battleSequence, name, normalizedEntries, this.round, remainingRounds, durationType);
     return (ObjectStore.instance.get<RoomEffectState>(created.identifier) ?? created).toBuffEffect(this.round);
   }
 
@@ -173,7 +179,7 @@ export class RoomState extends GameObject {
   applyTemplateToCharacters(template: BuffTemplate, targets: GameCharacter[]): number {
     let addedCount = 0;
     for (let target of targets) {
-      if (this.addEffect(target, template.name, this.effectEntries(template), template.durationRounds)) {
+      if (this.addEffect(target, template.name, this.effectEntries(template), template.durationRounds, template.durationType)) {
         addedCount++;
       }
     }
@@ -193,13 +199,30 @@ export class RoomState extends GameObject {
     if (effect) effect.active = false;
   }
 
+  consumeInstantEffects(targetIdentifier: string): number {
+    if (!targetIdentifier) return 0;
+
+    let consumed = ObjectStore.instance.getObjects(RoomEffectState)
+      .filter(effect => effect.active
+        && effect.battleSequence === this.battleSequence
+        && effect.targetIdentifier === targetIdentifier
+        && effect.durationType === 'instant');
+    for (let effect of consumed) {
+      effect.active = false;
+    }
+    return consumed.length;
+  }
+
   incrementRound(amount: number = 1): BuffEffect[] {
     if (amount < 1) return [];
     this.round = this.round + amount;
     this.sendRoundAnnouncement();
 
     let expiredStates = ObjectStore.instance.getObjects(RoomEffectState)
-      .filter(effect => effect.active && effect.battleSequence === this.battleSequence && effect.expiresAtRound <= this.round);
+      .filter(effect => effect.active
+        && effect.battleSequence === this.battleSequence
+        && effect.durationType !== 'instant'
+        && effect.expiresAtRound <= this.round);
     let expired = expiredStates.map(effect => effect.toBuffEffect(this.round));
     for (let effect of expiredStates) {
       effect.active = false;
@@ -232,7 +255,8 @@ export class RoomState extends GameObject {
       entries,
       Math.floor(Number(template.durationRounds)),
       undefined,
-      this.normalizeResourceCommandTokens((template.resourceCommands ?? []).join(' ')) ?? []
+      this.normalizeResourceCommandTokens((template.resourceCommands ?? []).join(' ')) ?? [],
+      template.durationType === 'instant' ? 'instant' : 'round'
     );
     return created.toBuffTemplate();
   }
@@ -245,6 +269,7 @@ export class RoomState extends GameObject {
     state.updateFrom({
       ...template,
       effects: entries,
+      durationType: template.durationType === 'instant' ? 'instant' : 'round',
       durationRounds: Math.floor(Number(template.durationRounds)),
       resourceCommands: this.normalizeResourceCommandTokens((template.resourceCommands ?? []).join(' ')) ?? [],
     });
@@ -601,7 +626,7 @@ export class RoomState extends GameObject {
 
     let parsed = this.parseBuffCommand(match[1]);
     if (!parsed) {
-      this.sendSystemMessage(chatMessage, tabIdentifier, 'バフ書式: /buff バフ名/効果1;効果2/効果時間');
+      this.sendSystemMessage(chatMessage, tabIdentifier, 'バフ書式: /buff バフ名/効果1;効果2/ラウンド数 または instant');
       return true;
     }
 
@@ -613,12 +638,12 @@ export class RoomState extends GameObject {
 
     let addedCount = 0;
     for (let target of targets) {
-      if (this.addEffect(target, parsed.name, this.effectEntries(parsed), parsed.durationRounds)) {
+      if (this.addEffect(target, parsed.name, this.effectEntries(parsed), parsed.durationRounds, parsed.durationType)) {
         addedCount++;
       }
     }
 
-    this.sendSystemMessage(chatMessage, tabIdentifier, `${parsed.name}: ${this.formatEffectEntries(this.effectEntries(parsed))} / 残り${parsed.durationRounds}R を${addedCount}体に付与`);
+    this.sendSystemMessage(chatMessage, tabIdentifier, `${parsed.name}: ${this.formatEffectEntries(this.effectEntries(parsed))} / ${this.formatDuration(parsed)} を${addedCount}体に付与`);
     if (resourceSource instanceof GameCharacter) {
       this.hideResourceCommandsInChatMessage(text, trailingResources.commands, resourceSource, chatMessage);
       await this.executeResourceCommands(trailingResources.commands, resourceSource, chatMessage, tabIdentifier);
@@ -651,7 +676,7 @@ export class RoomState extends GameObject {
     }
 
     let addedCount = this.applyTemplateToCharacters(template, targets);
-    this.sendSystemMessage(chatMessage, tabIdentifier, `${template.name} / 残り${template.durationRounds}R を${addedCount}体に付与`);
+    this.sendSystemMessage(chatMessage, tabIdentifier, `${template.name} / ${this.formatDuration(template)} を${addedCount}体に付与`);
     this.hideResourceCommandsInChatMessage(originalText || chatMessage.text, extraResourceCommands, source, chatMessage);
     await this.executeTemplateResourceCommands(template, source, chatMessage, tabIdentifier, extraResourceCommands);
     return true;
@@ -696,7 +721,8 @@ export class RoomState extends GameObject {
     if (parts.length !== 3) return null;
 
     let [name, effectText, durationText] = parts;
-    let duration = Number(durationText);
+    let durationType: BuffDurationType = /^(?:instant|inst)$/i.test(durationText) ? 'instant' : 'round';
+    let duration = durationType === 'instant' ? 1 : Number(durationText);
     if (!Number.isFinite(duration) || duration < 1) return null;
 
     let entries = effectText.split(';')
@@ -708,6 +734,7 @@ export class RoomState extends GameObject {
       name: name,
       effects: entries,
       ...this.legacyEffectFields(entries[0]),
+      durationType: durationType,
       durationRounds: Math.floor(duration),
     };
   }
@@ -744,21 +771,23 @@ export class RoomState extends GameObject {
   private migrateLegacyState(effects: BuffEffect[], templates: BuffTemplate[], actionDoneIds: string[]) {
     for (let effect of effects) {
       let entries = this.normalizeEffectEntries(this.effectEntries(effect));
-      let remainingRounds = Math.floor(Number(effect.remainingRounds));
+      let durationType: BuffDurationType = effect.durationType === 'instant' ? 'instant' : 'round';
+      let remainingRounds = durationType === 'instant' ? 1 : Math.floor(Number(effect.remainingRounds));
       if (!effect.targetIdentifier || !effect.name || entries.length < 1 || remainingRounds < 1) continue;
 
       let identifier = RoomEffectState.identifierFor(effect.targetIdentifier, this.battleSequence, effect.name, entries);
       if (ObjectStore.instance.get(identifier) || ObjectStore.instance.isDeleted(identifier)) continue;
-      let state = RoomEffectState.create(effect.targetIdentifier, this.battleSequence, effect.name, entries, this.round, remainingRounds);
+      let state = RoomEffectState.create(effect.targetIdentifier, this.battleSequence, effect.name, entries, this.round, remainingRounds, durationType);
       state.createdRound = Number.isFinite(Number(effect.createdRound)) ? Number(effect.createdRound) : this.round;
     }
 
     for (let template of templates) {
       let entries = this.normalizeEffectEntries(this.effectEntries(template));
-      let durationRounds = Math.floor(Number(template.durationRounds));
+      let durationType: BuffDurationType = template.durationType === 'instant' ? 'instant' : 'round';
+      let durationRounds = durationType === 'instant' ? 1 : Math.floor(Number(template.durationRounds));
       if (!template.id || !template.ownerIdentifier || !template.name || entries.length < 1 || durationRounds < 1) continue;
       if (ObjectStore.instance.get(template.id) || ObjectStore.instance.isDeleted(template.id)) continue;
-      RoomBuffTemplateState.create(template.ownerIdentifier, template.name, entries, durationRounds, template.id, this.normalizeResourceCommandTokens((template.resourceCommands ?? []).join(' ')) ?? []);
+      RoomBuffTemplateState.create(template.ownerIdentifier, template.name, entries, durationRounds, template.id, this.normalizeResourceCommandTokens((template.resourceCommands ?? []).join(' ')) ?? [], durationType);
     }
 
     if (this.round <= 0) return;
@@ -789,7 +818,8 @@ export class RoomState extends GameObject {
   private hasSameTemplate(template: Omit<BuffTemplate, 'id'>): boolean {
     return this.templatesFor(template.ownerIdentifier).some(item =>
       this.isSameText(item.name, template.name)
-      && item.durationRounds === template.durationRounds
+      && (item.durationType === 'instant' ? 'instant' : 'round') === (template.durationType === 'instant' ? 'instant' : 'round')
+      && (template.durationType === 'instant' || item.durationRounds === template.durationRounds)
       && this.isSameEffectEntries(this.effectEntries(item), this.effectEntries(template))
       && this.isSameStringList(item.resourceCommands ?? [], template.resourceCommands ?? [])
     );
@@ -1028,6 +1058,12 @@ export class RoomState extends GameObject {
       ? entry.description ?? ''
       : `${entry.statusName}${entry.operator}${entry.amount}`
     ).join('; ');
+  }
+
+  formatDuration(effect: { durationType?: BuffDurationType, durationRounds?: number, remainingRounds?: number }): string {
+    if (effect.durationType === 'instant') return 'INST';
+    let rounds = effect.remainingRounds ?? effect.durationRounds ?? 0;
+    return `${rounds}R`;
   }
 
   private normalizeEffectEntries(entries: BuffEffectEntry[]): BuffEffectEntry[] {

@@ -1,4 +1,4 @@
-import { BuffEffect, BuffEffectEntry } from './buff-effect';
+import { BuffDurationType, BuffEffect, BuffEffectEntry } from './buff-effect';
 import { SyncObject, SyncVar } from './core/synchronize-object/decorator';
 import { GameObject } from './core/synchronize-object/game-object';
 import { StringUtil, CompareOption } from './core/system/util/string-util';
@@ -9,17 +9,19 @@ export class RoomEffectState extends GameObject {
   @SyncVar() battleSequence: number = 0;
   @SyncVar() name: string = '';
   @SyncVar() entries: BuffEffectEntry[] = [];
+  @SyncVar() durationType: BuffDurationType = 'round';
   @SyncVar() createdRound: number = 0;
   @SyncVar() expiresAtRound: number = 0;
   @SyncVar() active: boolean = true;
 
-  static create(targetIdentifier: string, battleSequence: number, name: string, entries: BuffEffectEntry[], createdRound: number, durationRounds: number): RoomEffectState {
+  static create(targetIdentifier: string, battleSequence: number, name: string, entries: BuffEffectEntry[], createdRound: number, durationRounds: number, durationType: BuffDurationType = 'round'): RoomEffectState {
     let identifier = RoomEffectState.identifierFor(targetIdentifier, battleSequence, name, entries);
     let state = new RoomEffectState(identifier);
     state.targetIdentifier = targetIdentifier;
     state.battleSequence = battleSequence;
     state.name = name;
     state.entries = entries.map(entry => ({ ...entry }));
+    state.durationType = durationType;
     state.createdRound = createdRound;
     state.expiresAtRound = createdRound + durationRounds;
     state.active = true;
@@ -37,11 +39,12 @@ export class RoomEffectState extends GameObject {
     return `RoomEffect_${RoomEffectState.fnv1a64(source)}`;
   }
 
-  refresh(createdRound: number, durationRounds: number) {
+  refresh(createdRound: number, durationRounds: number, durationType: BuffDurationType = 'round') {
     let context = this.toContext();
     context.syncData = {
       ...context.syncData,
       active: true,
+      durationType: durationType,
       createdRound: createdRound,
       expiresAtRound: createdRound + durationRounds,
     };
@@ -61,7 +64,8 @@ export class RoomEffectState extends GameObject {
       operator: first?.operator ?? '+',
       amount: first?.amount ?? 0,
       description: first?.description ?? '',
-      remainingRounds: Math.max(0, this.expiresAtRound - round),
+      durationType: this.durationType === 'instant' ? 'instant' : 'round',
+      remainingRounds: this.durationType === 'instant' ? 0 : Math.max(0, this.expiresAtRound - round),
       createdRound: this.createdRound,
     };
   }
