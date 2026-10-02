@@ -40,8 +40,38 @@
 }
 
 .round-actions {
+  align-items: center;
   display: flex;
   gap: 4px;
+}
+
+.reset-control {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.reset-progress {
+  align-items: center;
+  color: #666;
+  display: flex;
+  font-size: 10px;
+  gap: 3px;
+}
+
+.reset-lamp {
+  background: #aaa;
+  border: 1px solid #777;
+  border-radius: 50%;
+  height: 8px;
+  width: 8px;
+}
+
+.reset-lamp.is-lit {
+  background: #e5a329;
+  border-color: #8a5b09;
+  box-shadow: 0 0 3px #e5a329;
 }
 
 .template-box {

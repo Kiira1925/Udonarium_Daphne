@@ -263,6 +263,7 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
     if (this.isRoundActive) {
       actions.push({
         name: this.isActionDone && !this.isActionExcluded ? '未行動に戻す' : '行動完了にする',
+        subMenuTitle: '',
         action: this.isActionExcluded ? null : () => {
           RoomState.instance.setActionDoneForCharacters(this.actionDoneTargets(), !this.isActionDone, true);
         },

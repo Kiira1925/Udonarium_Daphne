@@ -196,9 +196,4 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
     if (!this.character) return;
     this.roomState.toggleActionDone(this.character);
   }
-
-  toggleActionExcluded() {
-    if (!this.character) return;
-    this.roomState.setActionExcludedForCharacters([this.character], !this.isActionExcluded, true);
-  }
 }

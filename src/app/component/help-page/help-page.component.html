@@ -104,7 +104,7 @@
         <dt>行動完了</dt>
         <dd>ラウンド1以上の間は、キャラクターのチャットパレットまたはキャラコマの右クリックメニューから切り替えられます。未行動はグレー、完了済みはチェックで表示され、完了時はメインチャットへ記録されます。</dd>
         <dt>除外</dt>
-        <dd>チャットパレットの「除外」、または右クリックメニューの「行動完了にする」（完了済みの場合は「未行動に戻す」）のサブメニューから設定します。除外中のコマは除外マークで表示され、以後のラウンドでも常に行動完了扱いになります。チャットパレットの「除外解除」または同じサブメニューの「除外を解除する」で未行動に戻せます。複数選択したコマは右クリックメニューからまとめて操作できます。</dd>
+        <dd>右クリックメニューの「行動完了にする」（完了済みの場合は「未行動に戻す」）のサブメニューから設定します。除外中のコマは除外マークで表示され、以後のラウンドでも常に行動完了扱いになります。同じサブメニューの「除外を解除する」で未行動に戻せます。複数選択したコマは右クリックメニューからまとめて操作できます。チャットパレットには「除外中」と表示されます。</dd>
       </dl>
       <aside class="callout tip">
         <i class="material-icons" aria-hidden="true">lightbulb</i>
@@ -334,7 +334,7 @@
       data-summary="Next Round、Reset、行動完了、除外の進行ルール"
       data-keywords="round exclude Next Round Reset ラウンド 行動完了 除外 除外解除 GM 1R 2/3">
       <h2 tabindex="-1">ラウンド管理</h2>
-      <p class="topic-lead">GMモード中に「メニュー → 効果」を開き、<strong>Next Round</strong> で進行、<strong>Reset</strong> で戦闘を終了します。</p>
+      <p class="topic-lead">GMモード中に「メニュー → 効果」を開き、<strong>Next Round</strong> で進行、<strong>Reset</strong> を3回押すと戦闘を終了します。Resetの下の3つのランプと回数表示で、押した回数を確認できます。実行後、Next Round操作時、管理画面を開き直したときは回数が0に戻ります。ほかのユーザーがラウンドを変更した場合も、確認は0からになります。</p>
       <div class="table-scroll">
         <table>
           <caption class="visually-hidden">ラウンド操作コマンド</caption>
@@ -364,7 +364,7 @@
       <p class="sub-note">例：行動判定に参加しないコマを選択して <code>/exclude</code> を送信します。参加させるときは <code>/exclude off</code> を送信します。</p>
       <aside class="callout warning">
         <i class="material-icons" aria-hidden="true">restart_alt</i>
-        <div><strong>Resetは取り消せません</strong><span>付与中の効果と行動完了・除外状態を即時に解除します。戦闘終了時にだけ実行してください。</span></div>
+        <div><strong>Resetは取り消せません</strong><span>Resetボタンは3回目の押下で、付与中の効果と行動完了・除外状態を解除します。チャットの <code>/round reset</code> は1回の送信で実行されます。戦闘終了時にだけ実行してください。</span></div>
       </aside>
     </article>
 

@@ -12,7 +12,7 @@
     <div *ngIf="action.subActions" class="sub-menu-arrow">
       <i class="material-icons" style="font-size: 1em; vertical-align: bottom;">arrow_forward_ios</i>
     </div>
-    <context-menu *ngIf="subMenu && parentMenu === action" [title]="action.name" [actions]="subMenu" [isSubmenu]="true"></context-menu>
+    <context-menu *ngIf="subMenu && parentMenu === action" [title]="action.subMenuTitle ?? action.name" [actions]="subMenu" [isSubmenu]="true"></context-menu>
   </li>
 </ng-template>
 <ng-template #separator let-action="action">
