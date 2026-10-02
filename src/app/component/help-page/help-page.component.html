@@ -232,14 +232,19 @@
       data-help-tab="commands"
       data-help-topic="status-reference"
       data-title="ステータス参照"
-      data-summary="判定式から送信元キャラのステータスを参照"
-      data-keywords="BCDice ダイス 筋力 防護 能力値 波括弧 中括弧">
+      data-summary="ステータスと直前のダイス合計値を判定や計算へ組み込む"
+      data-keywords="BCDice ダイス 筋力 防護 能力値 波括弧 中括弧 lastRoll 直前 合計 ダメージ">
       <h2 tabindex="-1">ステータス参照</h2>
       <p class="topic-lead">ステータス名を <code>&#123; &#125;</code> で囲むと、送信元キャラの現在値を判定へ組み込めます。バフ・デバフによる補正も反映されます。</p>
       <div class="format-block">
         <span>書式</span>
         <code>2d6+&#123;ステータス名&#125;</code>
       </div>
+      <dl class="term-list">
+        <dt><code>&#123;lastRoll&#125;</code></dt>
+        <dd>ルーム全体で最後に公開されたダイス結果の合計値（補正込み）を参照します。送信者・送信元キャラ・チャットタブを切り替えても共通です。個々のダイスの出目ではありません。</dd>
+      </dl>
+      <p class="sub-note">数値の合計を取得できる結果がない場合は0です。通常発言、書式エラー、合計を取得できない結果、秘匿・個別送信のダイス結果、リソース操作内の計算では更新されません。繰り返しダイスは最後の判定の合計を使用します。参照元は残っているチャットログです。<code>lastRoll</code> は組み込み変数で、同名のステータスやパレット変数より優先されます。</p>
       <div class="example-card">
         <div class="example-heading">
           <strong>実行例</strong>
@@ -300,6 +305,7 @@
       </div>
       <ul class="example-list">
         <li><code>:HP-1d6</code><span>HPからBCDiceの結果を減らします。</span></li>
+        <li><code>:HP-&#123;lastRoll&#125;+&#123;防護&#125;!</code><span>直前のダイス合計が12、防護が3ならHPを9減らします。防護が合計以上ならHPは変わりません。</span></li>
         <li><code>:HP-10+5</code><span><code>-10+5</code> を計算し、HPを5減らします。</span></li>
         <li><code>:HP+30M</code><span>HPを30回復し、最大値で止めます。</span></li>
         <li><code>:HP-4 :MP-2 【攻撃コスト】</code><span>HPとMPを操作し、後半をコメントとして残します。</span></li>

@@ -577,7 +577,7 @@ export class RoomState extends GameObject {
   private async executeResourceCommand(command: ResourceCommand, source: GameCharacter, chatMessage?: ChatMessage, tabIdentifier?: string) {
     let resourceName = command.resourceName;
     let operator = command.operator;
-    let options = this.parseResourceOptions(command.expression);
+    let options = this.parseResourceOptions(DiceBot.replaceLastRollVariables(command.expression));
     let expression = options.expression;
     let shouldHideResourceChat = source.isStatusHidden;
     let expressionForEvaluate = operator === '+' || operator === '-' ? operator + expression : expression;
