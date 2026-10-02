@@ -64,7 +64,7 @@ export class RoomState extends GameObject {
   get actionDoneCharacterIds(): string[] {
     if (this.round <= 0) return [];
     return ObjectStore.instance.getObjects(CharacterActionState)
-      .filter(state => state.battleSequence === this.battleSequence && state.completedRound === this.round)
+      .filter(state => state.battleSequence === this.battleSequence && (state.excluded || state.completedRound === this.round))
       .map(state => state.characterIdentifier);
   }
 
@@ -394,9 +394,29 @@ export class RoomState extends GameObject {
   }
 
   isActionDone(character: GameCharacter): boolean {
+    if (this.isActionExcluded(character)) return true;
     if (!character || this.round <= 0) return false;
     let state = ObjectStore.instance.get<CharacterActionState>(CharacterActionState.identifierFor(character.identifier));
     return state?.battleSequence === this.battleSequence && state.completedRound === this.round;
+  }
+
+  isActionExcluded(character: GameCharacter): boolean {
+    if (!character) return false;
+    let state = ObjectStore.instance.get<CharacterActionState>(CharacterActionState.identifierFor(character.identifier));
+    return state?.battleSequence === this.battleSequence && state.excluded === true;
+  }
+
+  setActionExcludedForCharacters(characters: GameCharacter[], excluded: boolean, announce: boolean = false) {
+    for (let character of characters.filter(character => character != null)) {
+      if (this.isActionExcluded(character) === excluded) continue;
+      let state = ObjectStore.instance.get<CharacterActionState>(CharacterActionState.identifierFor(character.identifier));
+      if (state) {
+        state.setExcluded(this.battleSequence, excluded);
+      } else if (excluded) {
+        CharacterActionState.create(character.identifier, this.battleSequence, 0, true);
+      }
+      if (announce) this.sendMainSystemMessage(`${character.name} ${excluded ? 'をラウンド進行の行動判定から除外' : 'の除外を解除'}`);
+    }
   }
 
   setActionDone(character: GameCharacter, isDone: boolean) {
@@ -406,7 +426,7 @@ export class RoomState extends GameObject {
   setActionDoneForCharacters(characters: GameCharacter[], isDone: boolean, announce: boolean = false) {
     if (this.round <= 0) return;
 
-    let targets = characters.filter(character => character != null);
+    let targets = characters.filter(character => character != null && !this.isActionExcluded(character));
     if (targets.length < 1) return;
 
     let doneBefore = new Set(this.actionDoneCharacterIds);
@@ -428,6 +448,7 @@ export class RoomState extends GameObject {
   }
 
   toggleActionDone(character: GameCharacter): boolean {
+    if (this.isActionExcluded(character)) return true;
     let isDone = !this.isActionDone(character);
     this.setActionDoneForCharacters([character], isDone, true);
     return isDone;
@@ -442,6 +463,7 @@ export class RoomState extends GameObject {
     if (!text.startsWith('/')) return;
 
     if (await this.handleBuffCommand(text, chatMessage, tabIdentifier)) return;
+    if (this.handleExcludeCommand(text, chatMessage, tabIdentifier)) return;
     if (this.handleRoundCommand(text, chatMessage, tabIdentifier)) return;
   }
 
@@ -679,6 +701,24 @@ export class RoomState extends GameObject {
     this.sendSystemMessage(chatMessage, tabIdentifier, `${template.name} / ${this.formatDuration(template)} を${addedCount}体に付与`);
     this.hideResourceCommandsInChatMessage(originalText || chatMessage.text, extraResourceCommands, source, chatMessage);
     await this.executeTemplateResourceCommands(template, source, chatMessage, tabIdentifier, extraResourceCommands);
+    return true;
+  }
+
+  private handleExcludeCommand(text: string, chatMessage: ChatMessage, tabIdentifier: string): boolean {
+    let match = /^\/exclude(?:\s+(.*))?$/i.exec(text);
+    if (!match) return false;
+
+    let arg = (match[1] ?? 'on').trim().toLowerCase();
+    if (arg !== 'on' && arg !== 'off') {
+      this.sendSystemMessage(chatMessage, tabIdentifier, '除外書式: /exclude または /exclude off');
+      return true;
+    }
+    let targets = this.buffCommandTargets(chatMessage);
+    if (targets.length < 1) {
+      this.sendSystemMessage(chatMessage, tabIdentifier, '除外操作には、対象コマを選択するか送信元にキャラコマを指定してください');
+      return true;
+    }
+    this.setActionExcludedForCharacters(targets, arg === 'on', true);
     return true;
   }
 

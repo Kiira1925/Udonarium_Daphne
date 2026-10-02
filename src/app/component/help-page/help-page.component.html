@@ -103,6 +103,8 @@
         <dd>バフ・デバフは選択中のコマへ付与されます。何も選択していない場合は、チャットの送信元または効果管理の「使用コマ」が対象になります。</dd>
         <dt>行動完了</dt>
         <dd>ラウンド1以上の間は、キャラクターのチャットパレットまたはキャラコマの右クリックメニューから切り替えられます。未行動はグレー、完了済みはチェックで表示され、完了時はメインチャットへ記録されます。</dd>
+        <dt>除外</dt>
+        <dd>チャットパレットの「除外」または右クリックメニューから設定します。除外中のコマは除外マークで表示され、以後のラウンドでも常に行動完了扱いになります。「除外解除」で未行動に戻せます。複数選択したコマは右クリックメニューからまとめて操作できます。</dd>
       </dl>
       <aside class="callout tip">
         <i class="material-icons" aria-hidden="true">lightbulb</i>
@@ -329,8 +331,8 @@
       data-help-tab="effects"
       data-help-topic="round"
       data-title="ラウンド管理"
-      data-summary="Next Round、Reset、行動完了の進行ルール"
-      data-keywords="round Next Round Reset ラウンド 行動完了 GM 1R 2/3">
+      data-summary="Next Round、Reset、行動完了、除外の進行ルール"
+      data-keywords="round exclude Next Round Reset ラウンド 行動完了 除外 除外解除 GM 1R 2/3">
       <h2 tabindex="-1">ラウンド管理</h2>
       <p class="topic-lead">GMモード中に「メニュー → 効果」を開き、<strong>Next Round</strong> で進行、<strong>Reset</strong> で戦闘を終了します。</p>
       <div class="table-scroll">
@@ -341,7 +343,9 @@
           </thead>
           <tbody>
             <tr><td><code>/round +1</code></td><td>ラウンドを1進めます。メインチャットへ <code>【1ラウンド目】</code> のように記録し、効果の残りラウンドを減らします。</td></tr>
-            <tr><td><code>/round reset</code></td><td>ラウンドを0へ戻し、付与中の効果と行動完了状態を削除します。</td></tr>
+            <tr><td><code>/round reset</code></td><td>ラウンドを0へ戻し、付与中の効果と行動完了・除外状態を解除します。</td></tr>
+            <tr><td><code>/exclude</code> または <code>/exclude on</code></td><td>選択中のキャラクターを除外し、以後のラウンドでも常に行動完了扱いにします。未選択時は送信元のキャラクターを対象にします。</td></tr>
+            <tr><td><code>/exclude off</code></td><td>同じ対象ルールで除外を解除し、未行動に戻します。</td></tr>
           </tbody>
         </table>
       </div>
@@ -355,10 +359,12 @@
         <li>ラウンド1以上では、各チャットへ <code>1R</code> のような注釈が付きます。</li>
         <li>効果管理には、テーブル上コマの行動完了数が <code>2/3</code> のように表示されます。</li>
         <li>全キャラが行動完了になるまで、次のラウンドへ進めません。進行後は行動完了がリセットされます。</li>
+        <li>除外中のキャラクターは行動完了数に含まれ、ラウンド進行後も除外を維持します。毎ラウンドの行動完了操作は不要です。除外操作はGMモード以外でも利用できます。</li>
       </ul>
+      <p class="sub-note">例：行動判定に参加しないコマを選択して <code>/exclude</code> を送信します。参加させるときは <code>/exclude off</code> を送信します。</p>
       <aside class="callout warning">
         <i class="material-icons" aria-hidden="true">restart_alt</i>
-        <div><strong>Resetは取り消せません</strong><span>付与中の効果と行動完了状態を即時に削除します。戦闘終了時にだけ実行してください。</span></div>
+        <div><strong>Resetは取り消せません</strong><span>付与中の効果と行動完了・除外状態を即時に解除します。戦闘終了時にだけ実行してください。</span></div>
       </aside>
     </article>
 

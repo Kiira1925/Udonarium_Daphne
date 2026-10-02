@@ -66,6 +66,7 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
   }
   get isRoundActive(): boolean { return 0 < RoomState.instance.round; }
   get isActionDone(): boolean { return RoomState.instance.isActionDone(this.gameCharacter); }
+  get isActionExcluded(): boolean { return RoomState.instance.isActionExcluded(this.gameCharacter); }
   get canAccessCharacter(): boolean { return RoomState.instance.canAccessGMCharacter(this.gameCharacter); }
 
   gridSize: number = 50;
@@ -259,11 +260,19 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
       actions.push({ name: 'チャットパレットを表示', action: () => { this.showChatPalette(this.gameCharacter) } });
       actions.push({ name: '効果管理を開く', action: () => { this.showEffectManagement(this.gameCharacter) } });
     }
-    if (this.isRoundActive) {
+    if (this.isRoundActive && !this.isActionExcluded) {
       actions.push({
         name: this.isActionDone ? '未行動に戻す' : '行動完了にする',
         action: () => {
           RoomState.instance.setActionDoneForCharacters(this.actionDoneTargets(), !this.isActionDone, true);
+        }
+      });
+    }
+    if (this.isRoundActive) {
+      actions.push({
+        name: this.isActionExcluded ? '除外を解除する' : 'ラウンド進行の行動判定から除外する',
+        action: () => {
+          RoomState.instance.setActionExcludedForCharacters(this.actionDoneTargets(), !this.isActionExcluded, true);
         }
       });
     }

@@ -55,6 +55,7 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
   get roomState(): RoomState { return RoomState.instance; }
   get isRoundActive(): boolean { return 0 < this.roomState.round; }
   get isActionDone(): boolean { return this.character ? this.roomState.isActionDone(this.character) : false; }
+  get isActionExcluded(): boolean { return this.roomState.isActionExcluded(this.character); }
 
   constructor(
     public chatMessageService: ChatMessageService,
@@ -194,5 +195,10 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
   toggleActionDone() {
     if (!this.character) return;
     this.roomState.toggleActionDone(this.character);
+  }
+
+  toggleActionExcluded() {
+    if (!this.character) return;
+    this.roomState.setActionExcludedForCharacters([this.character], !this.isActionExcluded, true);
   }
 }
