@@ -1,0 +1,74 @@
+[
+  {
+    "id": "attack",
+    "label": "攻撃",
+    "file": "attack.png",
+    "suggestedUses": "攻撃強化・与ダメージ増加"
+  },
+  {
+    "id": "defense",
+    "label": "防御",
+    "file": "defense.png",
+    "suggestedUses": "防御強化・被ダメージ軽減"
+  },
+  {
+    "id": "magic",
+    "label": "魔力",
+    "file": "magic.png",
+    "suggestedUses": "魔力強化・魔法効果"
+  },
+  {
+    "id": "speed",
+    "label": "速度",
+    "file": "speed.png",
+    "suggestedUses": "加速・移動力・回避"
+  },
+  {
+    "id": "healing",
+    "label": "回復",
+    "file": "healing.png",
+    "suggestedUses": "回復・再生・生命力"
+  },
+  {
+    "id": "barrier",
+    "label": "障壁",
+    "file": "barrier.png",
+    "suggestedUses": "障壁・一時的な保護"
+  },
+  {
+    "id": "accuracy",
+    "label": "命中",
+    "file": "accuracy.png",
+    "suggestedUses": "命中強化・集中"
+  },
+  {
+    "id": "luck",
+    "label": "幸運",
+    "file": "luck.png",
+    "suggestedUses": "幸運・祝福・有利"
+  },
+  {
+    "id": "poison",
+    "label": "毒",
+    "file": "poison.png",
+    "suggestedUses": "毒・継続ダメージ"
+  },
+  {
+    "id": "burn",
+    "label": "炎上",
+    "file": "burn.png",
+    "suggestedUses": "炎上・火属性効果"
+  },
+  {
+    "id": "sleep",
+    "label": "睡眠",
+    "file": "sleep.png",
+    "suggestedUses": "睡眠・休息"
+  },
+  {
+    "id": "paralysis",
+    "label": "麻痺",
+    "file": "paralysis.png",
+    "suggestedUses": "麻痺・感電・行動阻害"
+  }
+]
