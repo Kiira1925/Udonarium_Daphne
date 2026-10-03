@@ -1,74 +1,114 @@
 [
   {
-    "id": "attack",
-    "label": "攻撃",
-    "file": "attack.png",
-    "suggestedUses": "攻撃強化・与ダメージ増加"
+    "id": "status-up-arrow",
+    "label": "ステータス上昇・矢印",
+    "category": "ステータス上昇",
+    "file": "status-up-arrow.png",
+    "suggestedUses": "能力値や判定補正の上昇"
   },
   {
-    "id": "defense",
-    "label": "防御",
-    "file": "defense.png",
-    "suggestedUses": "防御強化・被ダメージ軽減"
+    "id": "status-up-steps",
+    "label": "ステータス上昇・成長",
+    "category": "ステータス上昇",
+    "file": "status-up-steps.png",
+    "suggestedUses": "能力値や判定補正の上昇"
   },
   {
-    "id": "magic",
-    "label": "魔力",
-    "file": "magic.png",
-    "suggestedUses": "魔力強化・魔法効果"
+    "id": "status-up-crystal",
+    "label": "ステータス上昇・活性",
+    "category": "ステータス上昇",
+    "file": "status-up-crystal.png",
+    "suggestedUses": "能力値や判定補正の上昇"
   },
   {
-    "id": "speed",
-    "label": "速度",
-    "file": "speed.png",
-    "suggestedUses": "加速・移動力・回避"
+    "id": "status-up-aura",
+    "label": "ステータス上昇・高揚",
+    "category": "ステータス上昇",
+    "file": "status-up-aura.png",
+    "suggestedUses": "能力値や判定補正の上昇"
   },
   {
-    "id": "healing",
-    "label": "回復",
-    "file": "healing.png",
-    "suggestedUses": "回復・再生・生命力"
+    "id": "status-down-arrow",
+    "label": "ステータス低下・矢印",
+    "category": "ステータス低下",
+    "file": "status-down-arrow.png",
+    "suggestedUses": "能力値や判定補正の低下"
   },
   {
-    "id": "barrier",
-    "label": "障壁",
-    "file": "barrier.png",
-    "suggestedUses": "障壁・一時的な保護"
+    "id": "status-down-steps",
+    "label": "ステータス低下・減衰",
+    "category": "ステータス低下",
+    "file": "status-down-steps.png",
+    "suggestedUses": "能力値や判定補正の低下"
   },
   {
-    "id": "accuracy",
-    "label": "命中",
-    "file": "accuracy.png",
-    "suggestedUses": "命中強化・集中"
+    "id": "status-down-crystal",
+    "label": "ステータス低下・弱化",
+    "category": "ステータス低下",
+    "file": "status-down-crystal.png",
+    "suggestedUses": "能力値や判定補正の低下"
   },
   {
-    "id": "luck",
-    "label": "幸運",
-    "file": "luck.png",
-    "suggestedUses": "幸運・祝福・有利"
+    "id": "status-down-aura",
+    "label": "ステータス低下・消耗",
+    "category": "ステータス低下",
+    "file": "status-down-aura.png",
+    "suggestedUses": "能力値や判定補正の低下"
   },
   {
-    "id": "poison",
-    "label": "毒",
-    "file": "poison.png",
-    "suggestedUses": "毒・継続ダメージ"
+    "id": "ongoing-cycle",
+    "label": "持続効果・循環",
+    "category": "持続効果",
+    "file": "ongoing-cycle.png",
+    "suggestedUses": "継続する効果全般"
   },
   {
-    "id": "burn",
-    "label": "炎上",
-    "file": "burn.png",
-    "suggestedUses": "炎上・火属性効果"
+    "id": "ongoing-ripple",
+    "label": "持続効果・波紋",
+    "category": "持続効果",
+    "file": "ongoing-ripple.png",
+    "suggestedUses": "継続する効果全般"
   },
   {
-    "id": "sleep",
-    "label": "睡眠",
-    "file": "sleep.png",
-    "suggestedUses": "睡眠・休息"
+    "id": "protection-shell",
+    "label": "保護・包囲",
+    "category": "保護",
+    "file": "protection-shell.png",
+    "suggestedUses": "軽減・無効化・耐性"
   },
   {
-    "id": "paralysis",
-    "label": "麻痺",
-    "file": "paralysis.png",
-    "suggestedUses": "麻痺・感電・行動阻害"
+    "id": "protection-layer",
+    "label": "保護・重層",
+    "category": "保護",
+    "file": "protection-layer.png",
+    "suggestedUses": "軽減・無効化・耐性"
+  },
+  {
+    "id": "hindrance-knot",
+    "label": "行動阻害・拘束",
+    "category": "行動阻害",
+    "file": "hindrance-knot.png",
+    "suggestedUses": "行動制限・拘束・封鎖"
+  },
+  {
+    "id": "hindrance-seal",
+    "label": "行動阻害・封鎖",
+    "category": "行動阻害",
+    "file": "hindrance-seal.png",
+    "suggestedUses": "行動制限・拘束・封鎖"
+  },
+  {
+    "id": "special-star",
+    "label": "特殊効果・星",
+    "category": "特殊効果",
+    "file": "special-star.png",
+    "suggestedUses": "独自ルール・分類未定の効果"
+  },
+  {
+    "id": "special-orbit",
+    "label": "特殊効果・軌道",
+    "category": "特殊効果",
+    "file": "special-orbit.png",
+    "suggestedUses": "独自ルール・分類未定の効果"
   }
 ]
