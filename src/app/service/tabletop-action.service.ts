@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { Card } from '@udonarium/card';
 import { CardStack } from '@udonarium/card-stack';
+import { ChatTab } from '@udonarium/chat-tab';
+import { ObjectStore } from '@udonarium/core/synchronize-object/object-store';
 import { ImageContext, ImageFile } from '@udonarium/core/file-storage/image-file';
 import { ImageStorage } from '@udonarium/core/file-storage/image-storage';
 import { EventSystem, Network } from '@udonarium/core/system';
@@ -8,6 +10,7 @@ import { DiceSymbol, DiceType } from '@udonarium/dice-symbol';
 import { GameCharacter } from '@udonarium/game-character';
 import { GameTable } from '@udonarium/game-table';
 import { GameTableMask } from '@udonarium/game-table-mask';
+import { PeerCursor } from '@udonarium/peer-cursor';
 import { PresetSound, SoundEffect } from '@udonarium/sound-effect';
 import { RoomState } from '@udonarium/room-state';
 import { TableSelecter } from '@udonarium/table-selecter';
@@ -15,14 +18,42 @@ import { Terrain } from '@udonarium/terrain';
 import { TextNote } from '@udonarium/text-note';
 
 import { ContextMenuAction } from './context-menu.service';
+import { ChatMessageService } from './chat-message.service';
 import { PointerCoordinate } from './pointer-device.service';
+import { TabletopSelectionService } from './tabletop-selection.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class TabletopActionService {
 
-  constructor() { }
+  constructor(
+    private selectionService: TabletopSelectionService,
+    private chatMessageService: ChatMessageService
+  ) { }
+
+  makeSelectionChoiceContextMenuAction(): ContextMenuAction | null {
+    let selectedCharacters = () => this.selectionService.objects
+      .filter((object): object is GameCharacter => object instanceof GameCharacter);
+    let count = selectedCharacters().length;
+    if (count < 2) return null;
+
+    return {
+      name: '選択中のキャラクターでchoice',
+      action: () => {
+        let characters = selectedCharacters();
+        let chatTab = ObjectStore.instance.get<ChatTab>('MainTab') ?? this.chatMessageService.chatTabs[0];
+        let cursor = PeerCursor.myCursor;
+        if (characters.length < 2 || !chatTab || !cursor) return;
+
+        // 区切り文字や改行をコマ名の一部として扱い、1体につき1候補にする。
+        let names = characters.map(character => character.name
+          .replace(/[,，]/g, '、').replace(/[\]］]/g, '〕')
+          .replace(/\s+/g, ' ').trim() || '名称未設定');
+        this.chatMessageService.sendMessage(chatTab, `choice[${names.join(',')}]`, 'DiceBot', cursor.identifier);
+      }
+    };
+  }
 
   createGameCharacter(position: PointerCoordinate): GameCharacter {
     let character = GameCharacter.create('新しいキャラクター', 1, '');

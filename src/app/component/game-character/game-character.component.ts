@@ -23,6 +23,7 @@ import { ContextMenuAction, ContextMenuSeparator, ContextMenuService } from 'ser
 import { PanelOption, PanelService } from 'service/panel.service';
 import { PointerDeviceService } from 'service/pointer-device.service';
 import { SelectionState, TabletopSelectionService } from 'service/tabletop-selection.service';
+import { TabletopActionService } from 'service/tabletop-action.service';
 
 @Component({
   selector: 'game-character',
@@ -82,7 +83,8 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
     private panelService: PanelService,
     private changeDetector: ChangeDetectorRef,
     private selectionService: TabletopSelectionService,
-    private pointerDeviceService: PointerDeviceService
+    private pointerDeviceService: PointerDeviceService,
+    private tabletopActionService: TabletopActionService
   ) { }
 
   ngOnChanges(): void {
@@ -211,6 +213,8 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
       z: this.gameCharacter.posZ
     };
     actions.push({ name: 'ここに集める', action: () => this.selectionService.congregate(objectPosition) });
+    let choiceAction = this.tabletopActionService.makeSelectionChoiceContextMenuAction();
+    if (choiceAction) actions.push(choiceAction);
 
     if (this.isSelected) {
       let selectedCharacter = () => this.selectionService.objects.filter(object => object.aliasName === this.gameCharacter.aliasName) as GameCharacter[];

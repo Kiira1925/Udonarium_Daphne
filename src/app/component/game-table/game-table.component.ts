@@ -282,6 +282,8 @@ export class GameTableComponent implements OnInit, OnDestroy, AfterViewInit {
         },
         enabled: 0 < this.selectionService.size
       });
+      let choiceAction = this.tabletopActionService.makeSelectionChoiceContextMenuAction();
+      if (choiceAction) menuActions.push(choiceAction);
       menuActions.push(ContextMenuSeparator);
     }
     Array.prototype.push.apply(menuActions, this.tabletopActionService.makeDefaultContextMenuActions(objectPosition));
