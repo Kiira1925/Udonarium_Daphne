@@ -34,8 +34,9 @@
                   <span *ngIf="isRoundActive"
                     class="action-done-mark material-icons"
                     [class.is-done]="isActionDone"
-                    [class.is-pending]="!isActionDone">
-                    {{isActionDone ? 'check_circle' : 'radio_button_unchecked'}}
+                    [class.is-pending]="!isActionDone"
+                    [title]="isActionExcluded ? '除外中（常に行動完了扱い）' : (isActionDone ? '行動完了' : '未行動')">
+                    {{isActionExcluded ? 'block' : (isActionDone ? 'check_circle' : 'radio_button_unchecked')}}
                   </span>
                 </div>
               </div>

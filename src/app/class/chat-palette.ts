@@ -3,6 +3,7 @@ import { ObjectContext } from './core/synchronize-object/game-object';
 import { ObjectNode } from './core/synchronize-object/object-node';
 import { CompareOption, StringUtil } from './core/system/util/string-util';
 import { DataElement } from './data-element';
+import { DiceBot } from './dice-bot';
 import { RoomState } from './room-state';
 
 export interface PaletteLine {
@@ -65,6 +66,7 @@ export class ChatPalette extends ObjectNode {
       evaluate = evaluate.replace(/[{｛]\s*([^{}｛｝]+)\s*[}｝]/g, (match, name) => {
         name = StringUtil.toHalfWidth(name);
         isContinue = true;
+        if (name.trim().toLowerCase() === 'lastroll') return String(DiceBot.lastRoll);
         for (let variable of this.paletteVariables) {
           if (variable.name == name) return variable.value;
         }

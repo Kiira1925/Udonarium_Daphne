@@ -35,6 +35,9 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
   message: string = '';
   private isDestroyed: boolean = false;
   private isViewUpdateQueued: boolean = false;
+  private resetConfirmationCount: number = 0;
+  private resetConfirmationRound: number = -1;
+  private resetConfirmationBattleSequence: number = -1;
 
   get roomState(): RoomState { return RoomState.instance; }
   get round(): number { return this.roomState.round; }
@@ -42,6 +45,12 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
   get actionDoneCount(): number { return this.roomState.actionDoneCount(); }
   get actionTargetCount(): number { return this.roomState.actionTargetCount(); }
   get canAdvanceRound(): boolean { return this.canManageRound && this.roomState.canAdvanceRound(); }
+  get resetPressCount(): number {
+    return this.canManageRound
+      && this.resetConfirmationRound === this.round
+      && this.resetConfirmationBattleSequence === this.roomState.battleSequence
+      ? this.resetConfirmationCount : 0;
+  }
   get operators(): BuffOperator[] { return ['+', '-', '*']; }
   get effectKinds(): BuffEffectKind[] { return ['stat', 'note']; }
 
@@ -190,6 +199,7 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
   }
 
   incrementRound() {
+    this.clearResetConfirmation();
     if (!this.canManageRound) {
       this.message = 'ラウンド操作はGMモード中のユーザーのみ実行できます';
       return;
@@ -204,10 +214,24 @@ export class EffectManagementComponent implements OnInit, OnDestroy {
 
   resetBattle() {
     if (!this.canManageRound) {
+      this.clearResetConfirmation();
       this.message = 'ラウンド操作はGMモード中のユーザーのみ実行できます';
       return;
     }
+    this.resetConfirmationCount = this.resetPressCount + 1;
+    this.resetConfirmationRound = this.round;
+    this.resetConfirmationBattleSequence = this.roomState.battleSequence;
+    if (this.resetConfirmationCount < 3) return;
+
+    this.clearResetConfirmation();
     this.roomState.resetBattle();
+    this.message = '戦闘をリセットしました';
+  }
+
+  private clearResetConfirmation() {
+    this.resetConfirmationCount = 0;
+    this.resetConfirmationRound = -1;
+    this.resetConfirmationBattleSequence = -1;
   }
 
   removeEffect(effect: BuffEffect) {

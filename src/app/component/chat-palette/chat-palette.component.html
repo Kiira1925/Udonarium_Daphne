@@ -11,10 +11,11 @@
     <chat-input [onlyCharacters]="true" [chatTabidentifier]="chatTabidentifier" 
     [(gameType)]="gameType" [(sendFrom)]="sendFrom" [(text)]="text" (chat)="sendChat($event)" #chatInput></chat-input>
     <div *ngIf="isRoundActive" class="action-done-row">
-      <button type="button" class="action-done-button" [class.is-done]="isActionDone" (click)="toggleActionDone()">
+      <button *ngIf="!isActionExcluded" type="button" class="action-done-button" [class.is-done]="isActionDone" (click)="toggleActionDone()">
         <span class="material-icons">{{isActionDone ? 'check_circle' : 'radio_button_unchecked'}}</span>
         {{isActionDone ? '行動完了済み' : '行動完了にする'}}
       </button>
+      <span *ngIf="isActionExcluded" class="round-label" title="常に行動完了扱いです。右クリックメニューから除外を解除できます。">除外中</span>
       <span class="round-label">{{roomState.round}}R</span>
     </div>
     <div *ngIf="isEdit" class="edit-info"><i class="material-icons" style="vertical-align: bottom; size:0.8rem;">info_outline</i> チャットパレット編集中です</div>

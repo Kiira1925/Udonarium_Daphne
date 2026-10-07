@@ -22,6 +22,7 @@ export interface ContextMenuAction {
   enabled?: boolean,
   type?: ContextMenuType,
   subActions?: ContextMenuAction[]
+  subMenuTitle?: string
 }
 
 @Injectable({

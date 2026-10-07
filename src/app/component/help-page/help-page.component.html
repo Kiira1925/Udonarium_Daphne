@@ -103,6 +103,8 @@
         <dd>バフ・デバフは選択中のコマへ付与されます。何も選択していない場合は、チャットの送信元または効果管理の「使用コマ」が対象になります。</dd>
         <dt>行動完了</dt>
         <dd>ラウンド1以上の間は、キャラクターのチャットパレットまたはキャラコマの右クリックメニューから切り替えられます。未行動はグレー、完了済みはチェックで表示され、完了時はメインチャットへ記録されます。</dd>
+        <dt>除外</dt>
+        <dd>右クリックメニューの「行動完了にする」（完了済みの場合は「未行動に戻す」）のサブメニューから設定します。除外中のコマは除外マークで表示され、以後のラウンドでも常に行動完了扱いになります。同じサブメニューの「除外を解除する」で未行動に戻せます。複数選択したコマは右クリックメニューからまとめて操作できます。チャットパレットには「除外中」と表示されます。</dd>
       </dl>
       <aside class="callout tip">
         <i class="material-icons" aria-hidden="true">lightbulb</i>
@@ -230,14 +232,19 @@
       data-help-tab="commands"
       data-help-topic="status-reference"
       data-title="ステータス参照"
-      data-summary="判定式から送信元キャラのステータスを参照"
-      data-keywords="BCDice ダイス 筋力 防護 能力値 波括弧 中括弧">
+      data-summary="ステータスと直前のダイス合計値を判定や計算へ組み込む"
+      data-keywords="BCDice ダイス 筋力 防護 能力値 波括弧 中括弧 lastRoll 直前 合計 ダメージ">
       <h2 tabindex="-1">ステータス参照</h2>
       <p class="topic-lead">ステータス名を <code>&#123; &#125;</code> で囲むと、送信元キャラの現在値を判定へ組み込めます。バフ・デバフによる補正も反映されます。</p>
       <div class="format-block">
         <span>書式</span>
         <code>2d6+&#123;ステータス名&#125;</code>
       </div>
+      <dl class="term-list">
+        <dt><code>&#123;lastRoll&#125;</code></dt>
+        <dd>ルーム全体で最後に公開されたダイス結果の合計値（補正込み）を参照します。送信者・送信元キャラ・チャットタブを切り替えても共通です。個々のダイスの出目ではありません。</dd>
+      </dl>
+      <p class="sub-note">数値の合計を取得できる結果がない場合は0です。通常発言、書式エラー、合計を取得できない結果、秘匿・個別送信のダイス結果、リソース操作内の計算では更新されません。繰り返しダイスは最後の判定の合計を使用します。参照元は残っているチャットログです。<code>lastRoll</code> は組み込み変数で、同名のステータスやパレット変数より優先されます。</p>
       <div class="example-card">
         <div class="example-heading">
           <strong>実行例</strong>
@@ -298,6 +305,7 @@
       </div>
       <ul class="example-list">
         <li><code>:HP-1d6</code><span>HPからBCDiceの結果を減らします。</span></li>
+        <li><code>:HP-&#123;lastRoll&#125;+&#123;防護&#125;!</code><span>直前のダイス合計が12、防護が3ならHPを9減らします。防護が合計以上ならHPは変わりません。</span></li>
         <li><code>:HP-10+5</code><span><code>-10+5</code> を計算し、HPを5減らします。</span></li>
         <li><code>:HP+30M</code><span>HPを30回復し、最大値で止めます。</span></li>
         <li><code>:HP-4 :MP-2 【攻撃コスト】</code><span>HPとMPを操作し、後半をコメントとして残します。</span></li>
@@ -329,10 +337,10 @@
       data-help-tab="effects"
       data-help-topic="round"
       data-title="ラウンド管理"
-      data-summary="Next Round、Reset、行動完了の進行ルール"
-      data-keywords="round Next Round Reset ラウンド 行動完了 GM 1R 2/3">
+      data-summary="Next Round、Reset、行動完了、除外の進行ルール"
+      data-keywords="round exclude Next Round Reset ラウンド 行動完了 除外 除外解除 GM 1R 2/3">
       <h2 tabindex="-1">ラウンド管理</h2>
-      <p class="topic-lead">GMモード中に「メニュー → 効果」を開き、<strong>Next Round</strong> で進行、<strong>Reset</strong> で戦闘を終了します。</p>
+      <p class="topic-lead">GMモード中に「メニュー → 効果」を開き、<strong>Next Round</strong> で進行、<strong>Reset</strong> を3回押すと戦闘を終了します。Resetの下の3つのランプと回数表示で、押した回数を確認できます。実行後、Next Round操作時、管理画面を開き直したときは回数が0に戻ります。ほかのユーザーがラウンドを変更した場合も、確認は0からになります。</p>
       <div class="table-scroll">
         <table>
           <caption class="visually-hidden">ラウンド操作コマンド</caption>
@@ -341,7 +349,9 @@
           </thead>
           <tbody>
             <tr><td><code>/round +1</code></td><td>ラウンドを1進めます。メインチャットへ <code>【1ラウンド目】</code> のように記録し、効果の残りラウンドを減らします。</td></tr>
-            <tr><td><code>/round reset</code></td><td>ラウンドを0へ戻し、付与中の効果と行動完了状態を削除します。</td></tr>
+            <tr><td><code>/round reset</code></td><td>ラウンドを0へ戻し、付与中の効果と行動完了・除外状態を解除します。</td></tr>
+            <tr><td><code>/exclude</code> または <code>/exclude on</code></td><td>選択中のキャラクターを除外し、以後のラウンドでも常に行動完了扱いにします。未選択時は送信元のキャラクターを対象にします。</td></tr>
+            <tr><td><code>/exclude off</code></td><td>同じ対象ルールで除外を解除し、未行動に戻します。</td></tr>
           </tbody>
         </table>
       </div>
@@ -355,10 +365,12 @@
         <li>ラウンド1以上では、各チャットへ <code>1R</code> のような注釈が付きます。</li>
         <li>効果管理には、テーブル上コマの行動完了数が <code>2/3</code> のように表示されます。</li>
         <li>全キャラが行動完了になるまで、次のラウンドへ進めません。進行後は行動完了がリセットされます。</li>
+        <li>除外中のキャラクターは行動完了数に含まれ、ラウンド進行後も除外を維持します。毎ラウンドの行動完了操作は不要です。除外操作はGMモード以外でも利用できます。</li>
       </ul>
+      <p class="sub-note">例：行動判定に参加しないコマを選択して <code>/exclude</code> を送信します。参加させるときは <code>/exclude off</code> を送信します。</p>
       <aside class="callout warning">
         <i class="material-icons" aria-hidden="true">restart_alt</i>
-        <div><strong>Resetは取り消せません</strong><span>付与中の効果と行動完了状態を即時に削除します。戦闘終了時にだけ実行してください。</span></div>
+        <div><strong>Resetは取り消せません</strong><span>Resetボタンは3回目の押下で、付与中の効果と行動完了・除外状態を解除します。チャットの <code>/round reset</code> は1回の送信で実行されます。戦闘終了時にだけ実行してください。</span></div>
       </aside>
     </article>
 

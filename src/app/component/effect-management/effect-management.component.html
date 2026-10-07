@@ -10,10 +10,17 @@
         <i class="material-icons">add</i>
         <span>Next Round</span>
       </button>
-      <button class="danger" (click)="resetBattle()" [disabled]="!canManageRound">
-        <i class="material-icons">restart_alt</i>
-        <span>Reset</span>
-      </button>
+      <div class="reset-control">
+        <button type="button" class="danger" (click)="resetBattle()" [disabled]="!canManageRound"
+          [title]="'3回押すと戦闘をリセットします（' + resetPressCount + '/3）'">
+          <i class="material-icons">restart_alt</i>
+          <span>Reset</span>
+        </button>
+        <div class="reset-progress" role="status" aria-live="polite" [attr.aria-label]="'Reset ' + resetPressCount + '/3回。3回押すとリセットします。'">
+          <span *ngFor="let lamp of [1, 2, 3]" class="reset-lamp" [class.is-lit]="lamp <= resetPressCount" aria-hidden="true"></span>
+          <span aria-hidden="true">{{resetPressCount}}/3</span>
+        </div>
+      </div>
     </div>
   </section>
   <div class="caption" *ngIf="!canManageRound">ラウンド操作はGMモード中のみ実行できます。</div>

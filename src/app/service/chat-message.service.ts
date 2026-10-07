@@ -6,6 +6,7 @@ import { ChatTabList } from '@udonarium/chat-tab-list';
 import { ObjectStore } from '@udonarium/core/synchronize-object/object-store';
 import { Network } from '@udonarium/core/system';
 import { GameCharacter } from '@udonarium/game-character';
+import { DiceBot } from '@udonarium/dice-bot';
 import { PeerCursor } from '@udonarium/peer-cursor';
 import { RoomState } from '@udonarium/room-state';
 
@@ -100,7 +101,7 @@ export class ChatMessageService {
     if (object instanceof GameCharacter && object.chatPalette && object.rootDataElement) {
       return object.chatPalette.evaluate(text, object.rootDataElement);
     }
-    return text;
+    return DiceBot.replaceLastRollVariables(text);
   }
 
   private findId(identifier: string): string {

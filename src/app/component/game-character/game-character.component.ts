@@ -66,6 +66,7 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
   }
   get isRoundActive(): boolean { return 0 < RoomState.instance.round; }
   get isActionDone(): boolean { return RoomState.instance.isActionDone(this.gameCharacter); }
+  get isActionExcluded(): boolean { return RoomState.instance.isActionExcluded(this.gameCharacter); }
   get canAccessCharacter(): boolean { return RoomState.instance.canAccessGMCharacter(this.gameCharacter); }
 
   gridSize: number = 50;
@@ -261,10 +262,17 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
     }
     if (this.isRoundActive) {
       actions.push({
-        name: this.isActionDone ? '未行動に戻す' : '行動完了にする',
-        action: () => {
+        name: this.isActionDone && !this.isActionExcluded ? '未行動に戻す' : '行動完了にする',
+        subMenuTitle: '',
+        action: this.isActionExcluded ? null : () => {
           RoomState.instance.setActionDoneForCharacters(this.actionDoneTargets(), !this.isActionDone, true);
-        }
+        },
+        subActions: [{
+          name: this.isActionExcluded ? '除外を解除する' : 'ラウンド進行の行動判定から除外する',
+          action: () => {
+            RoomState.instance.setActionExcludedForCharacters(this.actionDoneTargets(), !this.isActionExcluded, true);
+          }
+        }]
       });
     }
     actions.push(ContextMenuSeparator);

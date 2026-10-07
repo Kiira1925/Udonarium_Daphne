@@ -15,6 +15,7 @@ interface DiceRollResult {
   id: string;
   result: string;
   isSecret: boolean;
+  total?: number | null;
 }
 
 let loader: BCDiceLoader;
@@ -23,6 +24,41 @@ let queue: PromiseQueue = initializeDiceBotQueue();
 @SyncObject('dice-bot')
 export class DiceBot extends GameObject {
   static diceBotInfos: GameSystemInfo[] = [];
+
+  static get lastRoll(): number {
+    let latest: ChatMessage = null;
+    let latestTotal = 0;
+    for (let message of ObjectStore.instance.getObjects(ChatMessage)) {
+      if (!message.isDicebot || message.isSecret || message.isDirect) continue;
+      let storedTotal = message.getAttribute('diceTotal');
+      let total = storedTotal == null || storedTotal === '' ? this.extractTotal(message.text) : Number(storedTotal);
+      if (total == null || !Number.isFinite(total)) continue;
+      if (latest && (message.timestamp < latest.timestamp
+        || (message.timestamp === latest.timestamp && message.identifier <= latest.identifier))) continue;
+      latest = message;
+      latestTotal = total;
+    }
+    return latestTotal;
+  }
+
+  static replaceLastRollVariables(text: string): string {
+    return text.replace(/[{｛]\s*([^{}｛｝]+?)\s*[}｝]/g, (match, name) =>
+      StringUtil.toHalfWidth(name).trim().toLowerCase() === 'lastroll' ? String(this.lastRoll) : match);
+  }
+
+  static extractTotal(result: string): number | null {
+    let lines = StringUtil.toHalfWidth(result ?? '').split(/\r?\n/);
+    for (let line of lines.reverse()) {
+      let parts = line.split(/[>＞]/).slice(1);
+      for (let part of parts.reverse()) {
+        let match = /^([+\-]?\d+(?:\.\d+)?)(?:\[[^\]]*\])?$/.exec(part.trim());
+        if (!match) continue;
+        let total = Number(match[1]);
+        if (Number.isFinite(total)) return total;
+      }
+    }
+    return null;
+  }
 
   // GameObject Lifecycle
   onStoreAdded() {
@@ -80,6 +116,7 @@ export class DiceBot extends GameObject {
       name: `${id} : ${originalMessage.name}${isSecret ? ' (Secret)' : ''}`,
       text: result,
       round: originalMessage.round,
+      diceTotal: rollResult.total ?? undefined,
     };
 
     if (originalMessage.to != null && 0 < originalMessage.to.length) {
@@ -106,6 +143,7 @@ export class DiceBot extends GameObject {
           id: gameSystem.ID,
           result: result.text.replace(/\n?(#\d+)\n/ig, '$1 '), // 繰り返しダイスロールは改行表示を短縮する
           isSecret: result.secret,
+          total: DiceBot.extractTotal(result.text),
         };
       }
     } catch (e) {
