@@ -13,6 +13,7 @@ import { ChatPaletteComponent } from 'component/chat-palette/chat-palette.compon
 import { ChatTabSettingComponent } from 'component/chat-tab-setting/chat-tab-setting.component';
 import { ChatTabComponent } from 'component/chat-tab/chat-tab.component';
 import { ChatWindowComponent } from 'component/chat-window/chat-window.component';
+import { LatestChatComponent } from 'component/latest-chat/latest-chat.component';
 import { ContextMenuComponent } from 'component/context-menu/context-menu.component';
 import { DiceSymbolComponent } from 'component/dice-symbol/dice-symbol.component';
 import { EffectManagementComponent } from 'component/effect-management/effect-management.component';
@@ -60,6 +61,7 @@ import { AppComponent } from './app.component';
     ChatTabComponent,
     ChatTabSettingComponent,
     ChatWindowComponent,
+    LatestChatComponent,
     ContextMenuComponent,
     EffectManagementComponent,
     FileSelecterComponent,

@@ -1,0 +1,114 @@
+[
+  {
+    "id": "status-up-arrow",
+    "label": "ステータス上昇・矢印",
+    "category": "ステータス上昇",
+    "file": "status-up-arrow.png",
+    "suggestedUses": "能力値や判定補正の上昇"
+  },
+  {
+    "id": "status-up-steps",
+    "label": "ステータス上昇・成長",
+    "category": "ステータス上昇",
+    "file": "status-up-steps.png",
+    "suggestedUses": "能力値や判定補正の上昇"
+  },
+  {
+    "id": "status-up-crystal",
+    "label": "ステータス上昇・活性",
+    "category": "ステータス上昇",
+    "file": "status-up-crystal.png",
+    "suggestedUses": "能力値や判定補正の上昇"
+  },
+  {
+    "id": "status-up-aura",
+    "label": "ステータス上昇・高揚",
+    "category": "ステータス上昇",
+    "file": "status-up-aura.png",
+    "suggestedUses": "能力値や判定補正の上昇"
+  },
+  {
+    "id": "status-down-arrow",
+    "label": "ステータス低下・矢印",
+    "category": "ステータス低下",
+    "file": "status-down-arrow.png",
+    "suggestedUses": "能力値や判定補正の低下"
+  },
+  {
+    "id": "status-down-steps",
+    "label": "ステータス低下・減衰",
+    "category": "ステータス低下",
+    "file": "status-down-steps.png",
+    "suggestedUses": "能力値や判定補正の低下"
+  },
+  {
+    "id": "status-down-crystal",
+    "label": "ステータス低下・弱化",
+    "category": "ステータス低下",
+    "file": "status-down-crystal.png",
+    "suggestedUses": "能力値や判定補正の低下"
+  },
+  {
+    "id": "status-down-aura",
+    "label": "ステータス低下・消耗",
+    "category": "ステータス低下",
+    "file": "status-down-aura.png",
+    "suggestedUses": "能力値や判定補正の低下"
+  },
+  {
+    "id": "ongoing-cycle",
+    "label": "持続効果・循環",
+    "category": "持続効果",
+    "file": "ongoing-cycle.png",
+    "suggestedUses": "継続する効果全般"
+  },
+  {
+    "id": "ongoing-ripple",
+    "label": "持続効果・波紋",
+    "category": "持続効果",
+    "file": "ongoing-ripple.png",
+    "suggestedUses": "継続する効果全般"
+  },
+  {
+    "id": "protection-shell",
+    "label": "保護・包囲",
+    "category": "保護",
+    "file": "protection-shell.png",
+    "suggestedUses": "軽減・無効化・耐性"
+  },
+  {
+    "id": "protection-layer",
+    "label": "保護・重層",
+    "category": "保護",
+    "file": "protection-layer.png",
+    "suggestedUses": "軽減・無効化・耐性"
+  },
+  {
+    "id": "hindrance-knot",
+    "label": "行動阻害・拘束",
+    "category": "行動阻害",
+    "file": "hindrance-knot.png",
+    "suggestedUses": "行動制限・拘束・封鎖"
+  },
+  {
+    "id": "hindrance-seal",
+    "label": "行動阻害・封鎖",
+    "category": "行動阻害",
+    "file": "hindrance-seal.png",
+    "suggestedUses": "行動制限・拘束・封鎖"
+  },
+  {
+    "id": "special-star",
+    "label": "特殊効果・星",
+    "category": "特殊効果",
+    "file": "special-star.png",
+    "suggestedUses": "独自ルール・分類未定の効果"
+  },
+  {
+    "id": "special-orbit",
+    "label": "特殊効果・軌道",
+    "category": "特殊効果",
+    "file": "special-orbit.png",
+    "suggestedUses": "独自ルール・分類未定の効果"
+  }
+]

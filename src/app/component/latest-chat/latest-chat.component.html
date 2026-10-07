@@ -1,0 +1,20 @@
+<section *ngIf="visible" class="stage" aria-label="最新のチャット">
+  <img *ngIf="imageUrl" #portrait class="portrait" [src]="imageUrl" [alt]="message.name + 'の立ち絵'"
+    [style.--portrait-width-factor]="portraitWidthFactor" [style.--portrait-aspect-ratio]="portraitAspectRatio"
+    (load)="onPortraitLoad(portrait)">
+  <div class="speech" aria-live="polite" aria-atomic="true">
+    <header>
+      <strong>{{message.name}}</strong>
+      <span class="tab-name">{{tabName}}</span>
+      <span class="private-note" *ngIf="message.isDirect">個別送信</span>
+      <button type="button" (click)="dismiss()" title="この発言を閉じる（次の発言で再表示）" aria-label="この発言を閉じる">×</button>
+    </header>
+    <div class="content">
+      <p class="text">{{displayText(message)}}</p>
+      <div class="dice-result" *ngFor="let result of results">
+        <span class="dice-label">🎲 ダイス結果</span>
+        <p class="text">{{displayText(result)}}</p>
+      </div>
+    </div>
+  </div>
+</section>

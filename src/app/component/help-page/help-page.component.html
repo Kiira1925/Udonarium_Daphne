@@ -88,8 +88,8 @@
       data-help-tab="basic"
       data-help-topic="selection"
       data-title="コマの選択と行動"
-      data-summary="個別選択、範囲選択、行動完了の操作"
-      data-keywords="Ctrl Shift 左クリック ドラッグ タッチ 長押し 選択解除">
+      data-summary="個別選択、範囲選択、choiceでの抽選、行動完了の操作"
+      data-keywords="Ctrl Shift 左クリック ドラッグ タッチ 長押し 選択解除 choice BCDice 抽選 ランダム 対象">
       <h2 tabindex="-1">コマの選択と行動</h2>
       <p class="topic-lead">複数のコマを選ぶと、移動やバフ付与などをまとめて操作できます。</p>
       <dl class="term-list">
@@ -101,11 +101,14 @@
         <dd>タッチ操作では、テーブルの空き部分を長押しし、選択表示が出てからドラッグします。</dd>
         <dt>選択中コマへの付与</dt>
         <dd>バフ・デバフは選択中のコマへ付与されます。何も選択していない場合は、チャットの送信元または効果管理の「使用コマ」が対象になります。</dd>
+        <dt>選択中のキャラクターでchoice</dt>
+        <dd>キャラクターを2体以上選択し、キャラコマまたはテーブルの空き部分を右クリックして実行します。選択中のキャラクター名を候補にしたBCDiceの <code>choice[名前1,名前2,...]</code> を1回送信し、メインチャットへ抽選結果を表示します。キャラクター以外のオブジェクトは対象に含みません。</dd>
         <dt>行動完了</dt>
         <dd>ラウンド1以上の間は、キャラクターのチャットパレットまたはキャラコマの右クリックメニューから切り替えられます。未行動はグレー、完了済みはチェックで表示され、完了時はメインチャットへ記録されます。</dd>
         <dt>除外</dt>
         <dd>右クリックメニューの「行動完了にする」（完了済みの場合は「未行動に戻す」）のサブメニューから設定します。除外中のコマは除外マークで表示され、以後のラウンドでも常に行動完了扱いになります。同じサブメニューの「除外を解除する」で未行動に戻せます。複数選択したコマは右クリックメニューからまとめて操作できます。チャットパレットには「除外中」と表示されます。</dd>
       </dl>
+      <p class="sub-note">例: モンスターAとモンスターBを選択すると、<code>choice[モンスターA,モンスターB]</code> で1体を選びます。同名のコマも1体につき1候補として扱います。名前内のカンマは「、」、閉じ角括弧は「〕」、改行などの空白はスペースに置き換えます。空の名前は「名称未設定」と表示します。</p>
       <aside class="callout tip">
         <i class="material-icons" aria-hidden="true">lightbulb</i>
         <div><strong>選択をすべて解除する</strong><span>テーブルの空き部分を短くクリックします。</span></div>
@@ -223,8 +226,40 @@
     <nav class="topic-nav" aria-label="チャットコマンドの見出し">
       <span>このタブ:</span>
       <button type="button" (click)="openTopic('commands', 'status-reference')">ステータス参照</button>
+      <button type="button" (click)="openTopic('commands', 'latest-chat')">最新チャットと立ち絵</button>
       <button type="button" (click)="openTopic('commands', 'resource-command')">リソース操作</button>
     </nav>
+
+    <article
+      #helpTopic
+      class="help-topic"
+      data-help-tab="commands"
+      data-help-topic="latest-chat"
+      data-title="最新チャットと立ち絵"
+      data-summary="画面下部に最新の発言・キャラ画像・ダイス結果をまとめて表示"
+      data-keywords="チャット 立ち絵 セリフ ダイス BCDice 最新 表示 非表示 シークレット 個別送信">
+      <h2 tabindex="-1">最新チャットと立ち絵</h2>
+      <p class="topic-lead">全チャットタブの中で最新の通常発言を、画面下部へ送信時のキャラ画像と一緒に表示します。画像がない発言も本文を表示します。</p>
+      <p>立ち絵は画像の縦横比に合わせて表示サイズを調整し、縦長・横長でも概ね同じ表示面積になるように揃えます。画像全体を表示し、画面に収まらない場合は縮小します。</p>
+      <dl class="term-list">
+        <dt>表示の切り替え</dt>
+        <dd>チャットウィンドウの「最新チャットを画面下部に表示」で、自分の画面の表示を切り替えます。</dd>
+        <dt>発言を閉じる</dt>
+        <dd>表示枠の「×」で現在の発言を閉じます。次の通常発言で再表示し、同じ発言のダイス結果が届くだけでは再表示しません。</dd>
+        <dt>ダイス結果</dt>
+        <dd>元の発言と立ち絵を残し、同じ枠の下へ結果を追記します。遅れて届いた古い発言の結果で、最新の発言を置き換えません。</dd>
+        <dt>表示対象</dt>
+        <dd>通常チャットとダイスロールを表示します。リソース操作（<code>:</code>で始まる発言）、<code>/buff</code>・<code>/round</code>・<code>/exclude</code>、システム通知は省略します。個別送信は関係者だけに表示し、シークレットダイスの結果は送信者以外には伏せます。</dd>
+      </dl>
+      <p class="sub-note">表示は次の通常発言まで残ります。長い本文や結果は枠内をスクロールして確認できます。元発言との対応情報がない過去のダイス結果は追記しません。</p>
+      <div class="example-card">
+        <div class="example-heading"><strong>表示例</strong></div>
+        <dl class="example-grid">
+          <div><dt>入力</dt><dd><code>1d20+10+10+1 モンスターBの格闘！</code></dd></div>
+          <div><dt>表示</dt><dd>モンスターBの立ち絵と発言を表示し、結果が届いたら下段へ <code>(1D20+10+10+1) ＞ 3[3]+10+10+1 ＞ 24</code> を追記します。</dd></div>
+        </dl>
+      </div>
+    </article>
 
     <article
       #helpTopic
@@ -268,7 +303,7 @@
       data-help-topic="resource-command"
       data-title="リソース操作"
       data-summary="HPやMPの増減・設定・上限・逆転防止"
-      data-keywords="HP MP リソース BCDice 四則演算 最大値 M 逆転 ! コメント 複数">
+      data-keywords="HP MP リソース BCDice 四則演算 最大値 M 逆転 ! コメント 複数 増減表示 アニメーション 赤 緑">
       <h2 tabindex="-1">リソース操作</h2>
       <p class="topic-lead">コマンドは半角の <code>:</code> で始めます。値には数値、BCDice、四則演算、<code>&#123;ステータス名&#125;</code> 参照を使用できます。</p>
       <div class="table-scroll">
@@ -310,6 +345,15 @@
         <li><code>:HP+30M</code><span>HPを30回復し、最大値で止めます。</span></li>
         <li><code>:HP-4 :MP-2 【攻撃コスト】</code><span>HPとMPを操作し、後半をコメントとして残します。</span></li>
       </ul>
+      <h3>キャラコマの増減表示</h3>
+      <p>コマンドでHPの現在値が変わると、キャラコマ付近へ小さめの文字で符号付きの増減量だけを重ねて表示します。ステータス名は表示しません。減少は赤字、増加は緑字で、数値が短い距離をゆるやかに浮き上がって消えます。上限処理後の実際の差分を表示し、値が変わらない場合は表示しません。</p>
+      <p>「メニュー → テーブル」のルーム共通設定で「増減表示の対象」にパラメータ名を指定すると、HP以外のリソースも対象にできます。複数はカンマ区切りで指定し、空欄はHPとして扱います。設定はルーム全体のキャラ・参加者で共有され、ルーム保存にも含まれます。</p>
+      <ul class="example-list">
+        <li><code>HP,MP</code><span>対象設定に入力するとHPとMPの両方を表示します。</span></li>
+        <li><code>:HP-4</code><span>赤字で「-4」を表示します。</span></li>
+        <li><code>:HP+30M</code><span>現在値18・最大値20なら、緑字で「+2」を表示します。</span></li>
+      </ul>
+      <p class="sub-note">バフの末尾やテンプレートのリソース操作も対象です。手動編集では表示しません。ステータス秘匿中のキャラの増減量はGMだけに表示します。</p>
       <p class="sub-note">式内の空括弧 <code>()</code> は0として扱われるため、チャットパレットの入力欄用の雛形にも使えます。未登録の補正ステータスを参照すると、詳細の「バフ・デバフ」欄へ値0で自動追加されます。</p>
     </article>
   </section>

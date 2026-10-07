@@ -2,6 +2,15 @@
   display: block;
 }
 
+.resource-display-setting {
+  border: 1px solid #aaa;
+  margin-bottom: 10px;
+  padding: 8px;
+}
+
+.resource-display-setting input { width: 160px; margin-left: 6px; }
+.resource-display-note { color: #555; font-size: 12px; margin-top: 4px; }
+
 .flex-container {
   display: -webkit-flex; /* Safari */
   display: flex;

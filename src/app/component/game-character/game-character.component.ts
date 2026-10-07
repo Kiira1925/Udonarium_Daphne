@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { ImageFile } from '@udonarium/core/file-storage/image-file';
 import { EventSystem, Network } from '@udonarium/core/system';
+import { ResourceChangeEvent } from '@udonarium/core/system/event/observer';
 import { MathUtil } from '@udonarium/core/system/util/math-util';
 import { GameCharacter } from '@udonarium/game-character';
 import { BuffEffect, RoomState } from '@udonarium/room-state';
@@ -23,6 +24,7 @@ import { ContextMenuAction, ContextMenuSeparator, ContextMenuService } from 'ser
 import { PanelOption, PanelService } from 'service/panel.service';
 import { PointerDeviceService } from 'service/pointer-device.service';
 import { SelectionState, TabletopSelectionService } from 'service/tabletop-selection.service';
+import { TabletopActionService } from 'service/tabletop-action.service';
 
 @Component({
   selector: 'game-character',
@@ -76,18 +78,30 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
   rollOption: RotableOption = {};
   private isDestroyed: boolean = false;
   private isViewUpdateQueued: boolean = false;
+  resourceChanges: (ResourceChangeEvent & { id: number; lane: number; text: string })[] = [];
+  private resourceChangeSequence: number = 0;
+  private resourceChangeTimers = new Map<number, ReturnType<typeof setTimeout>>();
+
+  get visibleResourceChanges() {
+    if (!this.canAccessCharacter) return [];
+    return this.resourceChanges.filter(change =>
+      !(change.isStatusHidden || this.gameCharacter.isStatusHidden) || RoomState.instance.isGM());
+  }
 
   constructor(
     private contextMenuService: ContextMenuService,
     private panelService: PanelService,
     private changeDetector: ChangeDetectorRef,
     private selectionService: TabletopSelectionService,
-    private pointerDeviceService: PointerDeviceService
+    private pointerDeviceService: PointerDeviceService,
+    private tabletopActionService: TabletopActionService
   ) { }
 
   ngOnChanges(): void {
+    this.clearResourceChanges();
     EventSystem.unregister(this);
     EventSystem.register(this)
+      .on('RESOURCE_VALUE_CHANGED', event => this.showResourceChange(event.data))
       .on(`UPDATE_GAME_OBJECT/identifier/${this.gameCharacter?.identifier}`, event => {
         this.requestViewUpdate();
       })
@@ -138,7 +152,34 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
 
   ngOnDestroy() {
     this.isDestroyed = true;
+    this.clearResourceChanges();
     EventSystem.unregister(this);
+  }
+
+  private showResourceChange(change: ResourceChangeEvent) {
+    if (change.characterIdentifier !== this.gameCharacter?.identifier
+      || !Number.isFinite(change.delta) || change.delta === 0 || !this.canAccessCharacter
+      || ((change.isStatusHidden || this.gameCharacter.isStatusHidden) && !RoomState.instance.isGM())) return;
+
+    let id = ++this.resourceChangeSequence;
+    let lane = 0;
+    while (this.resourceChanges.some(item => item.lane === lane)) lane++;
+    this.resourceChanges.push({ ...change, id: id, lane: lane, text: (change.delta > 0 ? '+' : '') + change.delta });
+    this.resourceChangeTimers.set(id, setTimeout(() => this.removeResourceChange(id), 1700));
+    this.requestViewUpdate();
+  }
+
+  removeResourceChange(id: number) {
+    clearTimeout(this.resourceChangeTimers.get(id));
+    this.resourceChangeTimers.delete(id);
+    this.resourceChanges = this.resourceChanges.filter(change => change.id !== id);
+    this.requestViewUpdate();
+  }
+
+  private clearResourceChanges() {
+    this.resourceChangeTimers.forEach(timer => clearTimeout(timer));
+    this.resourceChangeTimers.clear();
+    this.resourceChanges = [];
   }
 
   private requestViewUpdate() {
@@ -211,6 +252,8 @@ export class GameCharacterComponent implements OnChanges, OnDestroy {
       z: this.gameCharacter.posZ
     };
     actions.push({ name: 'ここに集める', action: () => this.selectionService.congregate(objectPosition) });
+    let choiceAction = this.tabletopActionService.makeSelectionChoiceContextMenuAction();
+    if (choiceAction) actions.push(choiceAction);
 
     if (this.isSelected) {
       let selectedCharacter = () => this.selectionService.objects.filter(object => object.aliasName === this.gameCharacter.aliasName) as GameCharacter[];

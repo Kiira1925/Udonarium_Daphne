@@ -129,6 +129,23 @@ describe('lastRoll shared variable', () => {
     expect(DiceBot.lastRoll).toBe(12);
   });
 
+  it('links actual dice result messages to their original speech and character', () => {
+    const tab = new ChatTab();
+    tab.initialize();
+    const original = new ChatMessage();
+    original.from = 'test-user';
+    original.name = 'モンスターB';
+    original.sourceIdentifier = 'test-character';
+    original.setAttribute('timestamp', 100);
+    tab.appendChild(original);
+    const add = spyOn(tab, 'addMessage').and.callThrough();
+    (new DiceBot() as any).sendResultMessage({ id: 'DiceBot', result: '結果 ＞ 24', total: 24, isSecret: false }, original);
+    expect(add.calls.mostRecent().args[0].replyToIdentifier).toBe(original.identifier);
+    const result = tab.chatMessages.find(message => message.isDicebot);
+    expect(result.replyToIdentifier).toBe(original.identifier);
+    expect(result.sourceIdentifier).toBe('test-character');
+  });
+
   it('expands the reserved variable inside palette macros without creating a status', () => {
     result(100, 12);
     let character = GameCharacter.create('target', 1, '');

@@ -47,6 +47,12 @@ export class RoomState extends GameObject {
   @SyncVar() round: number = 0;
   @SyncVar() battleSequence: number = 1;
   @SyncVar() roomMasterUserId: string = '';
+  @SyncVar() resourceDisplayNames: string = 'HP';
+
+  isResourceDisplayTarget(name: string): boolean {
+    return (this.resourceDisplayNames || 'HP').split(/[,、，]/).some(target =>
+      StringUtil.equals(target.trim(), name, CompareOption.IgnoreCase | CompareOption.IgnoreWidth));
+  }
 
   get effects(): BuffEffect[] {
     return ObjectStore.instance.getObjects(RoomEffectState)
@@ -112,6 +118,9 @@ export class RoomState extends GameObject {
     delete syncData['buffTemplates'];
     delete syncData['actionDoneCharacterIds'];
     if (!Number.isFinite(Number(syncData['battleSequence']))) syncData['battleSequence'] = 1;
+    if (typeof syncData['resourceDisplayNames'] !== 'string' || !syncData['resourceDisplayNames'].trim()) {
+      syncData['resourceDisplayNames'] = 'HP';
+    }
 
     super.apply({ ...context, syncData: syncData });
 
@@ -127,6 +136,7 @@ export class RoomState extends GameObject {
       round: 0,
       battleSequence: 1,
       roomMasterUserId: '',
+      resourceDisplayNames: 'HP',
     };
     this.apply(context);
     this.update();
@@ -606,6 +616,15 @@ export class RoomState extends GameObject {
     next = this.applyResourceResultOptions(next, resource, options);
 
     resource.currentValue = Number.isInteger(next) ? next : Number(next.toFixed(4));
+    let delta = Number((Number(resource.currentValue) - current).toFixed(4));
+    if (delta !== 0 && this.isResourceDisplayTarget(resource.name)) {
+      EventSystem.call('RESOURCE_VALUE_CHANGED', {
+        characterIdentifier: source.identifier,
+        resourceName: resource.name,
+        delta: delta,
+        isStatusHidden: shouldHideResourceChat,
+      });
+    }
     let publicText = shouldHideResourceChat
       ? `${source.name} ${resource.name}: ?? -> ??`
       : `${source.name} ${resource.name}: ${current} -> ${resource.currentValue} (${this.formatResourceOperation(operatorForCalculate, operand)})`;
