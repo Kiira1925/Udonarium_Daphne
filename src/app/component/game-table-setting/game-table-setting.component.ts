@@ -6,6 +6,7 @@ import { ObjectStore } from '@udonarium/core/synchronize-object/object-store';
 import { EventSystem, Network } from '@udonarium/core/system';
 import { FilterType, GameTable, GridType } from '@udonarium/game-table';
 import { TableSelecter } from '@udonarium/table-selecter';
+import { RoomState } from '@udonarium/room-state';
 
 import { FileSelecterComponent } from 'component/file-selecter/file-selecter.component';
 import { ImageService } from 'service/image.service';
@@ -21,6 +22,10 @@ import { SaveDataService } from 'service/save-data.service';
 export class GameTableSettingComponent implements OnInit, OnDestroy {
   minSize: number = 1;
   maxSize: number = 100;
+  get resourceDisplayNames(): string { return RoomState.instance.resourceDisplayNames; }
+  set resourceDisplayNames(names: string) {
+    RoomState.instance.resourceDisplayNames = names.trim() || 'HP';
+  }
   get tableBackgroundImage(): ImageFile {
     return this.imageService.getEmptyOr(this.selectedTable ? this.selectedTable.imageIdentifier : null);
   }

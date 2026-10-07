@@ -17,6 +17,15 @@
         <div class="rotate-frame is-3d" [style.width.px]="size * gridSize" [style.height.px]="size * gridSize"
           appRotable [rotable.option]="rollOption" (rotable.ondragstart)="onMove()" (rotable.ondragend)="onMoved()">
           <div class="rotate-inner is-3d">
+            <div *ngFor="let rotateY of ['0', '180deg']" class="resource-change-anchor"
+              [style.left.px]="size * gridSize / 2"
+              [style.transform]="'rotateY(' + rotateY + ') translateX(' + (size * gridSize / 2 + 8) + 'px)'">
+              <div *ngFor="let change of visibleResourceChanges" class="resource-change"
+                [class.is-increase]="change.delta > 0" [class.is-decrease]="change.delta < 0"
+                [style.top.px]="-change.lane * 48" (animationend)="removeResourceChange(change.id)">
+                <small>{{change.resourceName}}</small><span>{{change.text}}</span>
+              </div>
+            </div>
             <ng-container *ngIf="isSelected">
               <div *ngFor="let rotateY of ['0', '180deg']"
                 class="selection-marker is-black-background"

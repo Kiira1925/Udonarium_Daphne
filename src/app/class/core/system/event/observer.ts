@@ -3,7 +3,15 @@ import { Subject } from './subject';
 
 export type Callback<T> = (event: Event<T>, listener?: Observer) => void;
 
+export interface ResourceChangeEvent {
+  characterIdentifier: string;
+  resourceName: string;
+  delta: number;
+  isStatusHidden: boolean;
+}
+
 export interface EventMap {
+  'RESOURCE_VALUE_CHANGED': ResourceChangeEvent;
   'OPEN_NETWORK': { peerId: string };
   'CLOSE_NETWORK': { peerId: string };
   'NETWORK_ERROR': { peerId: string, errorType: string, errorMessage: string, errorObject: any };

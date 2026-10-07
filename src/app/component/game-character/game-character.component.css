@@ -2,6 +2,41 @@
   display: block;
 }
 
+.resource-change-anchor {
+  backface-visibility: hidden;
+  pointer-events: none;
+  position: absolute;
+  top: 20%;
+  z-index: 6;
+}
+
+.resource-change {
+  animation: resource-change-float 1600ms ease-out both;
+  font-size: 28px;
+  font-weight: bold;
+  line-height: 1;
+  position: absolute;
+  text-shadow: -1px -1px 1px #fff, 1px -1px 1px #fff, -1px 1px 1px #fff, 1px 1px 1px #fff, 0 2px 4px #000;
+  white-space: nowrap;
+}
+
+.resource-change small {
+  display: block;
+  font-size: 11px;
+  margin-bottom: 3px;
+}
+
+.resource-change.is-increase { color: #16852b; }
+.resource-change.is-decrease { color: #d52222; }
+
+@keyframes resource-change-float {
+  0% { opacity: 0; transform: translateY(8px) scale(0.7); }
+  15% { opacity: 1; transform: translateY(0) scale(1.15); }
+  30% { opacity: 1; transform: translateY(-8px) scale(1); }
+  65% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-55px) scale(1); }
+}
+
 .is-grab {
   cursor: -moz-grab;
   cursor: -webkit-grab;

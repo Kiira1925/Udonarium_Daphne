@@ -1,3 +1,11 @@
+<fieldset class="resource-display-setting">
+  <legend>ルーム共通設定</legend>
+  <label>増減表示の対象
+    <input type="text" [ngModel]="resourceDisplayNames" (ngModelChange)="resourceDisplayNames = $event"
+      [ngModelOptions]="{updateOn: 'blur'}" placeholder="HP" />
+  </label>
+  <div class="resource-display-note">パラメータ名を指定（複数はカンマ区切り、空欄はHP）。全キャラ・参加者で共有します。</div>
+</fieldset>
 <div class="flex-container">
   <div class="flex-item no-grow">
     <div>
