@@ -12,8 +12,8 @@ describe('RoomState action exclusion', () => {
   beforeEach(() => {
     room = new RoomState('room-exclusion-test');
     room.round = 1;
-    first = new GameCharacter('action-exclusion-first');
-    second = new GameCharacter('action-exclusion-second');
+    first = new GameCharacter();
+    second = new GameCharacter();
     spyOn(room, 'tableCharacters').and.returnValue([first, second]);
     spyOn<any>(room, 'sendRoundAnnouncement');
     spyOn<any>(room, 'sendMainSystemMessage');
@@ -22,9 +22,8 @@ describe('RoomState action exclusion', () => {
 
   afterEach(() => {
     for (let character of [first, second]) {
-      let state = ObjectStore.instance.get<CharacterActionState>(CharacterActionState.identifierFor(character.identifier));
-      if (state) ObjectStore.instance.remove(state);
-      if (ObjectStore.instance.get(character.identifier)) ObjectStore.instance.remove(character);
+      ObjectStore.instance.delete(CharacterActionState.identifierFor(character.identifier), false);
+      ObjectStore.instance.delete(character.identifier, false);
     }
   });
 
