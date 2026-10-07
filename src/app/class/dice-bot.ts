@@ -109,6 +109,8 @@ export class DiceBot extends GameObject {
       identifier: '',
       tabIdentifier: originalMessage.tabIdentifier,
       originFrom: originalMessage.from,
+      sourceIdentifier: originalMessage.sourceIdentifier,
+      replyToIdentifier: originalMessage.identifier,
       from: 'System-BCDice',
       timestamp: originalMessage.timestamp + 1,
       imageIdentifier: '',

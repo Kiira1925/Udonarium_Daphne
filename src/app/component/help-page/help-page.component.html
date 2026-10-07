@@ -226,8 +226,39 @@
     <nav class="topic-nav" aria-label="チャットコマンドの見出し">
       <span>このタブ:</span>
       <button type="button" (click)="openTopic('commands', 'status-reference')">ステータス参照</button>
+      <button type="button" (click)="openTopic('commands', 'latest-chat')">最新チャットと立ち絵</button>
       <button type="button" (click)="openTopic('commands', 'resource-command')">リソース操作</button>
     </nav>
+
+    <article
+      #helpTopic
+      class="help-topic"
+      data-help-tab="commands"
+      data-help-topic="latest-chat"
+      data-title="最新チャットと立ち絵"
+      data-summary="画面下部に最新の発言・キャラ画像・ダイス結果をまとめて表示"
+      data-keywords="チャット 立ち絵 セリフ ダイス BCDice 最新 表示 非表示 シークレット 個別送信">
+      <h2 tabindex="-1">最新チャットと立ち絵</h2>
+      <p class="topic-lead">全チャットタブの中で最新の通常発言を、画面下部へ送信時のキャラ画像と一緒に表示します。画像がない発言も本文を表示します。</p>
+      <dl class="term-list">
+        <dt>表示の切り替え</dt>
+        <dd>チャットウィンドウの「最新チャットを画面下部に表示」で、自分の画面の表示を切り替えます。</dd>
+        <dt>発言を閉じる</dt>
+        <dd>表示枠の「×」で現在の発言を閉じます。次の通常発言で再表示し、同じ発言のダイス結果が届くだけでは再表示しません。</dd>
+        <dt>ダイス結果</dt>
+        <dd>元の発言と立ち絵を残し、同じ枠の下へ結果を追記します。遅れて届いた古い発言の結果で、最新の発言を置き換えません。</dd>
+        <dt>表示対象</dt>
+        <dd>通常チャットとダイスロールを表示します。リソース操作（<code>:</code>で始まる発言）、<code>/buff</code>・<code>/round</code>・<code>/exclude</code>、システム通知は省略します。個別送信は関係者だけに表示し、シークレットダイスの結果は送信者以外には伏せます。</dd>
+      </dl>
+      <p class="sub-note">表示は次の通常発言まで残ります。長い本文や結果は枠内をスクロールして確認できます。元発言との対応情報がない過去のダイス結果は追記しません。</p>
+      <div class="example-card">
+        <div class="example-heading"><strong>表示例</strong></div>
+        <dl class="example-grid">
+          <div><dt>入力</dt><dd><code>1d20+10+10+1 モンスターBの格闘！</code></dd></div>
+          <div><dt>表示</dt><dd>モンスターBの立ち絵と発言を表示し、結果が届いたら下段へ <code>(1D20+10+10+1) ＞ 3[3]+10+10+1 ＞ 24</code> を追記します。</dd></div>
+        </dl>
+      </div>
+    </article>
 
     <article
       #helpTopic

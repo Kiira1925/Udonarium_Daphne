@@ -17,6 +17,7 @@ export interface ChatMessageContext {
   dicebot?: string;
   imageIdentifier?: string;
   sourceIdentifier?: string;
+  replyToIdentifier?: string;
   round?: number;
   diceTotal?: number;
   gmText?: string;
@@ -32,6 +33,7 @@ export class ChatMessage extends ObjectNode implements ChatMessageContext {
   @SyncVar() dicebot: string;
   @SyncVar() imageIdentifier: string;
   @SyncVar() sourceIdentifier: string;
+  @SyncVar() replyToIdentifier: string;
   @SyncVar() round: number;
   @SyncVar() diceTotal: number;
 

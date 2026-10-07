@@ -25,6 +25,7 @@ export class ChatMessageService {
   ];
 
   gameType: string = '';
+  latestChatEnabled: boolean = true;
 
   constructor() { }
 
