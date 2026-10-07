@@ -24,11 +24,10 @@
 .resource-change.is-decrease { color: #d52222; }
 
 @keyframes resource-change-float {
-  0% { opacity: 0; transform: translateY(8px) scale(0.7); }
-  15% { opacity: 1; transform: translateY(0) scale(1.15); }
-  30% { opacity: 1; transform: translateY(-8px) scale(1); }
-  65% { opacity: 1; }
-  100% { opacity: 0; transform: translateY(-55px) scale(1); }
+  0% { opacity: 0; transform: translateY(2px) scale(0.96); }
+  20% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-22px) scale(1); }
 }
 
 .is-grab {
