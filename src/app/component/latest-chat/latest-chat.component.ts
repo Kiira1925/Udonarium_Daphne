@@ -41,6 +41,8 @@ export class LatestChatComponent implements OnInit, OnDestroy {
   results: ChatMessage[] = [];
   private dismissedIdentifier: string = '';
   private updateTimer: ReturnType<typeof setTimeout> = null;
+  private portraitUrl: string = '';
+  private portraitRatio: number = 1;
 
   get visible(): boolean {
     return this.chatMessageService.latestChatEnabled && !!this.message
@@ -48,6 +50,8 @@ export class LatestChatComponent implements OnInit, OnDestroy {
   }
 
   get imageUrl(): string { return this.message?.image?.url ?? ''; }
+  get portraitAspectRatio(): number { return this.portraitUrl === this.imageUrl ? this.portraitRatio : 1; }
+  get portraitWidthFactor(): number { return Math.sqrt(this.portraitAspectRatio); }
   get tabName(): string { return (this.message?.parent as ChatTab)?.name ?? ''; }
   displayText = latestChatText;
 
@@ -67,6 +71,12 @@ export class LatestChatComponent implements OnInit, OnDestroy {
   }
 
   dismiss() { this.dismissedIdentifier = this.message?.identifier ?? ''; }
+
+  onPortraitLoad(image: HTMLImageElement) {
+    if (image.naturalWidth <= 0 || image.naturalHeight <= 0) return;
+    this.portraitUrl = this.imageUrl;
+    this.portraitRatio = image.naturalWidth / image.naturalHeight;
+  }
 
   private scheduleUpdate() {
     if (this.updateTimer !== null) return;

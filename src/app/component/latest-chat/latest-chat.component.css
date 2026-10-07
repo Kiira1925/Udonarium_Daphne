@@ -6,14 +6,24 @@
   z-index: 90;
   pointer-events: none;
 }
-.stage { max-width: 1100px; margin: 0 auto; }
+.stage {
+  --portrait-size: min(300px, 32vw);
+  --portrait-max-height: min(520px, 55vh);
+  --portrait-max-width: 640px;
+  --portrait-inset: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
 .portrait {
   display: block;
-  width: min(300px, 32vw);
-  height: min(340px, 38vh);
+  /* Equalize image area, then scale down only when a screen limit is reached. */
+  width: min(calc(var(--portrait-size) * var(--portrait-width-factor, 1)),
+    calc(var(--portrait-max-height) * var(--portrait-aspect-ratio, 1)),
+    var(--portrait-max-width), calc(100% - var(--portrait-inset)));
+  height: auto;
   object-fit: contain;
   object-position: bottom left;
-  margin-left: 24px;
+  margin-left: var(--portrait-inset);
   filter: drop-shadow(0 4px 8px #0004);
 }
 .speech {
@@ -55,7 +65,12 @@ button:focus-visible { outline: 2px solid #555; outline-offset: -2px; }
 .dice-result .text { font-size: 16px; margin-top: 4px; }
 @media (max-width: 600px) {
   :host { left: 8px; right: 8px; bottom: 8px; }
-  .portrait { width: 160px; height: 24vh; margin-left: 12px; }
+  .stage {
+    --portrait-size: 160px;
+    --portrait-max-height: min(360px, 42vh);
+    --portrait-max-width: 100%;
+    --portrait-inset: 12px;
+  }
   header { padding: 8px 12px 0; gap: 8px; flex-wrap: wrap; }
   .content { padding: 0 12px 12px; max-height: 28vh; }
   strong, .text { font-size: 16px; }

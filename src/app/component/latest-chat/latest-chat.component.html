@@ -1,5 +1,7 @@
 <section *ngIf="visible" class="stage" aria-label="最新のチャット">
-  <img *ngIf="imageUrl" class="portrait" [src]="imageUrl" [alt]="message.name + 'の立ち絵'">
+  <img *ngIf="imageUrl" #portrait class="portrait" [src]="imageUrl" [alt]="message.name + 'の立ち絵'"
+    [style.--portrait-width-factor]="portraitWidthFactor" [style.--portrait-aspect-ratio]="portraitAspectRatio"
+    (load)="onPortraitLoad(portrait)">
   <div class="speech" aria-live="polite" aria-atomic="true">
     <header>
       <strong>{{message.name}}</strong>
