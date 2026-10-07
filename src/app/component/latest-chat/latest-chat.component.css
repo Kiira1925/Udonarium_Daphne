@@ -29,13 +29,19 @@ strong { font-size: 18px; overflow-wrap: anywhere; }
 .tab-name, .private-note { font-size: 12px; color: #666; }
 .private-note { color: #555; }
 button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   flex-shrink: 0;
-  margin-left: auto;
+  margin: 0 0 0 auto;
+  padding: 0;
   border: 0;
   border-radius: 4px;
   background: transparent;
   color: #555;
   font-size: 28px;
+  line-height: 1;
   cursor: pointer;
   width: 36px;
   height: 36px;
