@@ -14,37 +14,38 @@
   object-fit: contain;
   object-position: bottom left;
   margin-left: 24px;
-  filter: drop-shadow(0 4px 8px #0008);
+  filter: drop-shadow(0 4px 8px #0004);
 }
 .speech {
-  color: #fff;
-  background: rgba(22, 22, 22, .94);
-  border: 1px solid #ffffff1f;
+  color: #444;
+  background: linear-gradient(-30deg, rgba(240, 218, 189, .9), rgba(255, 244, 232, .9));
+  border: 1px solid #999;
   border-radius: 8px;
-  box-shadow: 0 4px 18px #0006;
+  box-shadow: 0 4px 18px #0003;
   pointer-events: auto;
 }
 header { display: flex; align-items: center; gap: 12px; padding: 12px 24px 4px; }
 strong { font-size: 18px; overflow-wrap: anywhere; }
-.tab-name, .private-note { font-size: 12px; color: #bbb; }
-.private-note { color: #ffd49a; }
+.tab-name, .private-note { font-size: 12px; color: #666; }
+.private-note { color: #555; }
 button {
   flex-shrink: 0;
   margin-left: auto;
   border: 0;
   border-radius: 4px;
   background: transparent;
-  color: #fff;
+  color: #555;
   font-size: 28px;
   cursor: pointer;
   width: 36px;
   height: 36px;
 }
-button:hover, button:focus-visible { background: #ffffff26; }
+button:hover, button:focus-visible { background: rgba(80, 80, 80, .12); }
+button:focus-visible { outline: 2px solid #555; outline-offset: -2px; }
 .content { padding: 0 24px 18px; max-height: 24vh; overflow-y: auto; }
 .text { margin: 10px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 18px; line-height: 1.5; }
-.dice-result { margin-top: 12px; padding-top: 10px; border-top: 1px solid #ffffff26; color: #e8d7b0; }
-.dice-label { font-size: 12px; }
+.dice-result { margin-top: 12px; padding-top: 10px; border-top: 1px dotted #999; }
+.dice-label { font-size: 12px; color: #666; }
 .dice-result .text { font-size: 16px; margin-top: 4px; }
 @media (max-width: 600px) {
   :host { left: 8px; right: 8px; bottom: 8px; }
