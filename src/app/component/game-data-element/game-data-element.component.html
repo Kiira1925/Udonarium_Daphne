@@ -10,7 +10,7 @@
     </div>
     <div class="table-cell table-cell_solid">
       <ng-container *ngIf="isTagLocked">
-        <div style="font-family: Cambria, Georgia; font-size: 0.9rem;">{{name}}</div>
+        <div style="font-family: Cambria, Georgia; font-size: 0.9rem;">{{isImageScale ? '画像表示倍率' : name}}</div>
       </ng-container>
       <ng-container *ngIf="!isTagLocked">
         <div class="hidden-spacer" style="font-family: Cambria, Georgia; font-size: 0.9rem;">{{name}}</div>
@@ -19,7 +19,16 @@
       </ng-container>
     </div>
     <div class="table-cell">
-      <ng-container [ngSwitch]="gameDataElement.type">
+      <ng-container [ngSwitch]="isImageScale ? 'imageScale' : gameDataElement.type">
+        <ng-container *ngSwitchCase="'imageScale'">
+          <input style="min-width: 90px; width: 90%; --min: 0.1; --max: 5;"
+            [style.--val]="value" [(ngModel)]="value" type="range" min="0.1" max="5" step="0.1"
+            aria-label="画像表示倍率" />
+          <br>
+          <input style="width: 5em; text-align: right;" type="number" min="0.1" max="5" step="0.1"
+            [(ngModel)]="value" aria-label="画像表示倍率の数値" /> 倍
+          <button type="button" (click)="value = 1" style="font-size: 0.8rem;" title="標準の表示サイズに戻す">1倍に戻す</button>
+        </ng-container>
         <ng-container *ngSwitchCase="'numberResource'">
           <input [style]="'font-size: 1.0em; min-width: 90px; width: 90%; --min: 0; --max: ' + value + '; --val:' + currentValue +';' | safe: 'style'"
             [(ngModel)]="currentValue" type="range" min="0" max="{{value}}" />

@@ -60,6 +60,9 @@ export class GameCharacterSheetComponent implements OnInit, OnDestroy {
       });
     this.closeIfForbidden();
     this.closeIfScratchLocked();
+    if (this.gameCharacter && RoomState.instance.canAccessGMCharacter(this.gameCharacter)) {
+      this.gameCharacter.ensureImageScaleElement();
+    }
   }
 
   ngOnDestroy() {
