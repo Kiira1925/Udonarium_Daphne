@@ -122,12 +122,14 @@
       data-help-topic="files"
       data-title="キャラクターとZIP"
       data-summary="詳細画面、効果管理、キャラクターの保存と読み込み"
-      data-keywords="キャラコマ キャラクターシート 詳細 効果管理 ZIP zip 保存 読み込み チャットパレット テンプレート">
+      data-keywords="キャラコマ キャラクターシート 詳細 common size imageScale 画像 表示サイズ 倍率 スライダー 効果管理 ZIP zip 保存 読み込み チャットパレット テンプレート">
       <h2 tabindex="-1">キャラクターとZIP</h2>
       <p class="topic-lead">キャラコマの情報は右クリックから編集し、ZIPファイルで持ち運べます。</p>
       <dl class="term-list">
         <dt>キャラクターの詳細</dt>
         <dd>キャラコマを右クリックして「詳細を表示」を選びます。画像、ステータス、チャットパレットなどを編集できます。</dd>
+        <dt>画像の表示サイズ</dt>
+        <dd>詳細画面の <code>common</code> 欄で、<code>size</code> の下にある <code>imageScale</code> をスライダーで調整します。標準は <code>1</code> で、<code>0.1</code>〜<code>5</code> に変更できます。台座の大きさは <code>size</code> のまま、画像は台座の中央・足元を基準に拡大・縮小されます。値を <code>1</code> にすると標準に戻ります。倍率はほかの参加者にも同期され、コピー・ZIP保存時にも保持されます。</dd>
         <dt>そのキャラの効果管理</dt>
         <dd>キャラコマを右クリックし、チャットパレット表示の下にある「効果管理を開く」を選ぶと、そのキャラを「使用コマ」にした状態で開きます。</dd>
         <dt>ZIPを読み込む</dt>
@@ -142,6 +144,7 @@
           <span>効果管理の「全テンプレートをコピー」で得た定義行をチャットパレットへ登録してからZIP保存します。キャラZIP読込時に <code>/buff 効果名/効果/ラウンド</code> 形式の行から自動登録され、<code>/buff テンプレート名</code> のような呼び出し行だけでは登録されません。</span>
         </div>
       </aside>
+      <p class="sub-note">画像表示倍率の例：<code>0.5</code> は画像の幅・高さが半分、<code>2</code> は2倍になります。</p>
       <p class="sub-note">コピー形式では、テンプレート名・ステータス名・自由記述に半角 <code>/</code> を使用できません。自由記述の半角 <code>;</code> も複数効果の区切りとして扱われます。</p>
     </article>
 

@@ -12,6 +12,27 @@ export class GameCharacter extends TabletopObject {
 
   get name(): string { return this.getCommonValue('name', ''); }
   get size(): number { return this.getCommonValue('size', 1); }
+  get imageScale(): number {
+    return GameCharacter.normalizeImageScale(this.getCommonValue('imageScale', 1));
+  }
+
+  static normalizeImageScale(value: number | string): number {
+    let scale = +value;
+    return Number.isFinite(scale) && scale > 0 ? Math.min(5, Math.max(0.1, scale)) : 1;
+  }
+
+  ensureImageScaleElement(): DataElement {
+    let common = this.commonDataElement;
+    if (!common) return null;
+    let element = common.getFirstElementByName('imageScale');
+    if (element) return element;
+    element = DataElement.create('imageScale', 1, {}, 'imageScale_' + this.identifier);
+    let sizeIndex = common.children.findIndex(child => child.getAttribute('name') === 'size');
+    let nextElement = sizeIndex >= 0 ? common.children[sizeIndex + 1] : null;
+    if (nextElement) common.insertBefore(element, nextElement);
+    else common.appendChild(element);
+    return element;
+  }
   get createdByUserId(): string { return this.getAttribute('createdByUserId'); }
   get isGMCreated(): boolean { return this.getAttribute('gmCreated') === 'true'; }
   get isStatusHidden(): boolean { return this.getAttribute('statusHidden') === 'true'; }
@@ -68,6 +89,7 @@ export class GameCharacter extends TabletopObject {
 
     this.commonDataElement.appendChild(nameElement);
     this.commonDataElement.appendChild(sizeElement);
+    this.ensureImageScaleElement();
 
     this.detailDataElement.appendChild(resourceElement);
     resourceElement.appendChild(hpElement);

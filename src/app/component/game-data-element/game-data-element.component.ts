@@ -26,7 +26,15 @@ export class GameDataElementComponent implements OnInit, OnChanges, OnDestroy {
 
   private _value: number | string = 0;
   get value(): number | string { return this._value; }
-  set value(value: number | string) { this._value = value; this.setUpdateTimer(); }
+  set value(value: number | string) {
+    this._value = this.isImageScale ? GameCharacter.normalizeImageScale(value) : value;
+    this.setUpdateTimer();
+  }
+
+  get isImageScale(): boolean {
+    return this.gameDataElement?.name === 'imageScale'
+      && this.gameDataElement.parent === this.ownerCharacter()?.commonDataElement;
+  }
 
   private _currentValue: number | string = 0;
   get currentValue(): number | string { return this._currentValue; }
@@ -116,7 +124,7 @@ export class GameDataElementComponent implements OnInit, OnChanges, OnDestroy {
   private setValues(object: DataElement) {
     this._name = object.name;
     this._currentValue = object.currentValue;
-    this._value = object.value;
+    this._value = this.isImageScale ? GameCharacter.normalizeImageScale(object.value) : object.value;
   }
 
   private effectModifierSummary(): { modifierText: string, modifiedValue: string } | null {
