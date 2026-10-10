@@ -47,9 +47,9 @@ export class ChatPalette extends ObjectNode {
     this.isAnalized = false;
   }
 
-  evaluate(line: PaletteLine, extendVariables?: DataElement): string
-  evaluate(line: string, extendVariables?: DataElement): string
-  evaluate(line: any, extendVariables?: DataElement): string {
+  evaluate(line: PaletteLine, extendVariables?: DataElement, onLastRoll?: () => void): string
+  evaluate(line: string, extendVariables?: DataElement, onLastRoll?: () => void): string
+  evaluate(line: any, extendVariables?: DataElement, onLastRoll?: () => void): string {
     let evaluate: string = '';
     if (typeof line === 'string') {
       evaluate = line;
@@ -66,7 +66,10 @@ export class ChatPalette extends ObjectNode {
       evaluate = evaluate.replace(/[{｛]\s*([^{}｛｝]+)\s*[}｝]/g, (match, name) => {
         name = StringUtil.toHalfWidth(name);
         isContinue = true;
-        if (name.trim().toLowerCase() === 'lastroll') return String(DiceBot.lastRoll);
+        if (name.trim().toLowerCase() === 'lastroll') {
+          onLastRoll?.();
+          return String(DiceBot.lastRoll);
+        }
         for (let variable of this.paletteVariables) {
           if (variable.name == name) return variable.value;
         }

@@ -2,6 +2,7 @@ import { ChatMessage } from './chat-message';
 import { ChatTab } from './chat-tab';
 import { GameObject } from './core/synchronize-object/game-object';
 import { ObjectStore } from './core/synchronize-object/object-store';
+import { ObjectSerializer } from './core/synchronize-object/object-serializer';
 import { DataElement } from './data-element';
 import { DiceBot } from './dice-bot';
 import { GameCharacter } from './game-character';
@@ -106,6 +107,64 @@ describe('lastRoll shared variable', () => {
     peer.apply(original.toContext());
     messages = [peer];
     expect(DiceBot.lastRoll).toBe(15);
+  });
+
+  it('keeps the previous total after lastRoll dice commands and updates it after an independent roll', async () => {
+    result(100, 12);
+    const tab = new ChatTab();
+    tab.initialize();
+    const service = new ChatMessageService();
+    const bot = new DiceBot();
+    for (const [command, total, lastRoll] of [
+      ['1D1+{lastRoll}', 13, 12],
+      ['x2 1D1+｛ ＬＡＳＴＲＯＬＬ ｝', 13, 12],
+      ['1D1+5', 6, 6],
+      ['C({lastRoll}*2)', 12, 6],
+    ] as [string, number, number][]) {
+      const original = service.sendMessage(tab, command, 'DiceBot', 'test-user');
+      const roll = await DiceBot.diceRollAsync(original.text, 'DiceBot');
+      expect(roll.total).toBe(total);
+      (bot as any).sendResultMessage(roll, original);
+      const response = tab.chatMessages.find(message => message.replyToIdentifier === original.identifier);
+      expect(response.diceTotal).toBe(total);
+      messages.push(response);
+      expect(DiceBot.lastRoll).toBe(lastRoll);
+    }
+  });
+
+  it('preserves the exclusion on peers and in saved logs without the original command', () => {
+    const original = result(100, 15);
+    original.usesLastRoll = true;
+    const peer = new ChatMessage(original.identifier);
+    peer.apply(original.toContext());
+    messages = [peer];
+    expect(DiceBot.lastRoll).toBe(0);
+    const restored = ObjectSerializer.instance.parseXml(original.toXml()) as ChatMessage;
+    messages = [restored];
+    expect(DiceBot.lastRoll).toBe(0);
+    original.usesLastRoll = false;
+    messages = [ObjectSerializer.instance.parseXml(original.toXml()) as ChatMessage];
+    expect(DiceBot.lastRoll).toBe(15);
+  });
+
+  it('tracks lastRoll inside nested palette and status variables when sending character commands', async () => {
+    result(100, 12);
+    const character = GameCharacter.create('target', 1, '');
+    character.chatPalette.setPalette('//damage=1D1+{previous}\n//previous={lastRoll}');
+    character.detailDataElement.appendChild(DataElement.create('previousRoll', '{lastRoll}'));
+    const tab = new ChatTab();
+    tab.initialize();
+    const service = new ChatMessageService();
+    for (const command of ['{damage}', '1D1+{previousRoll}']) {
+      const original = service.sendMessage(tab, command, 'DiceBot', character.identifier);
+      expect(original.text).toBe('1D1+12');
+      const roll = await DiceBot.diceRollAsync(original.text, 'DiceBot');
+      (new DiceBot() as any).sendResultMessage(roll, original);
+      const response = tab.chatMessages.find(message => message.replyToIdentifier === original.identifier);
+      expect(response.diceTotal).toBe(13);
+      messages.push(response);
+      expect(DiceBot.lastRoll).toBe(12);
+    }
   });
 
   it('adds totals to dice result messages in different chat tabs', () => {

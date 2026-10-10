@@ -160,8 +160,9 @@ export class ChatPaletteComponent implements OnInit, OnDestroy {
   sendChat(value: { text: string, gameType: string, sendFrom: string, sendTo: string }) {
     if (this.chatTab && this.palette) {
       for (let character of this.rollCharacters) {
-        let text = this.palette.evaluate(value.text, character.rootDataElement);
-        this.chatMessageService.sendMessage(this.chatTab, text, value.gameType, character.identifier, value.sendTo);
+        let usesLastRoll = false;
+        let text = this.palette.evaluate(value.text, character.rootDataElement, () => usesLastRoll = true);
+        this.chatMessageService.sendMessage(this.chatTab, text, value.gameType, character.identifier, value.sendTo, usesLastRoll);
       }
     }
   }

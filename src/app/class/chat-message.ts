@@ -20,6 +20,7 @@ export interface ChatMessageContext {
   replyToIdentifier?: string;
   round?: number;
   diceTotal?: number;
+  usesLastRoll?: boolean;
   gmText?: string;
 }
 
@@ -36,6 +37,7 @@ export class ChatMessage extends ObjectNode implements ChatMessageContext {
   @SyncVar() replyToIdentifier: string;
   @SyncVar() round: number;
   @SyncVar() diceTotal: number;
+  @SyncVar() usesLastRoll: boolean = false;
 
   get tabIdentifier(): string { return this.parent.identifier; }
   get text(): string { return <string>this.value }

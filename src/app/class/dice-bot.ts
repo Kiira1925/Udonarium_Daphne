@@ -29,7 +29,7 @@ export class DiceBot extends GameObject {
     let latest: ChatMessage = null;
     let latestTotal = 0;
     for (let message of ObjectStore.instance.getObjects(ChatMessage)) {
-      if (!message.isDicebot || message.isSecret || message.isDirect) continue;
+      if (!message.isDicebot || message.isSecret || message.isDirect || message.usesLastRoll) continue;
       let storedTotal = message.getAttribute('diceTotal');
       let total = storedTotal == null || storedTotal === '' ? this.extractTotal(message.text) : Number(storedTotal);
       if (total == null || !Number.isFinite(total)) continue;
@@ -41,9 +41,12 @@ export class DiceBot extends GameObject {
     return latestTotal;
   }
 
-  static replaceLastRollVariables(text: string): string {
-    return text.replace(/[{｛]\s*([^{}｛｝]+?)\s*[}｝]/g, (match, name) =>
-      StringUtil.toHalfWidth(name).trim().toLowerCase() === 'lastroll' ? String(this.lastRoll) : match);
+  static replaceLastRollVariables(text: string, onLastRoll?: () => void): string {
+    return text.replace(/[{｛]\s*([^{}｛｝]+?)\s*[}｝]/g, (match, name) => {
+      if (StringUtil.toHalfWidth(name).trim().toLowerCase() !== 'lastroll') return match;
+      onLastRoll?.();
+      return String(this.lastRoll);
+    });
   }
 
   static extractTotal(result: string): number | null {
@@ -119,6 +122,7 @@ export class DiceBot extends GameObject {
       text: result,
       round: originalMessage.round,
       diceTotal: rollResult.total ?? undefined,
+      usesLastRoll: originalMessage.usesLastRoll,
     };
 
     if (originalMessage.to != null && 0 < originalMessage.to.length) {

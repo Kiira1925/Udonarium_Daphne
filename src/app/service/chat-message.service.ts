@@ -79,8 +79,8 @@ export class ChatMessageService {
     return Math.floor(this.timeOffset + (performance.now() - this.performanceOffset));
   }
 
-  sendMessage(chatTab: ChatTab, text: string, gameType: string, sendFrom: string, sendTo?: string): ChatMessage {
-    text = this.evaluateText(text, sendFrom);
+  sendMessage(chatTab: ChatTab, text: string, gameType: string, sendFrom: string, sendTo?: string, usesLastRoll: boolean = false): ChatMessage {
+    text = this.evaluateText(text, sendFrom, () => usesLastRoll = true);
 
     let chatMessage: ChatMessageContext = {
       from: Network.peer.userId,
@@ -92,17 +92,18 @@ export class ChatMessageService {
       tag: gameType,
       text: text,
       round: RoomState.instance.round,
+      usesLastRoll: usesLastRoll,
     };
 
     return chatTab.addMessage(chatMessage);
   }
 
-  private evaluateText(text: string, sendFrom: string): string {
+  private evaluateText(text: string, sendFrom: string, onLastRoll?: () => void): string {
     let object = ObjectStore.instance.get(sendFrom);
     if (object instanceof GameCharacter && object.chatPalette && object.rootDataElement) {
-      return object.chatPalette.evaluate(text, object.rootDataElement);
+      return object.chatPalette.evaluate(text, object.rootDataElement, onLastRoll);
     }
-    return DiceBot.replaceLastRollVariables(text);
+    return DiceBot.replaceLastRollVariables(text, onLastRoll);
   }
 
   private findId(identifier: string): string {
